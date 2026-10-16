@@ -1,0 +1,20 @@
+[package]
+name = "rjot"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description.workspace = true
+
+[dependencies]
+rjot-core = { path = "../core" }
+# egui 0.34+ needs rustc 1.92+; 0.33 matches rgrip.
+eframe = "0.33"
+resvg = { version = "0.48", default-features = false }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+core-foundation = "0.9"
+core-graphics = "0.23"
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "libc", "NSPasteboard", "NSPasteboardItem", "NSRunningApplication", "NSWorkspace", "NSSound"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSArray", "NSData", "NSString"] }
+libc = "0.2"
