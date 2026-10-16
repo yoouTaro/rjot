@@ -90,6 +90,51 @@ pub struct App {
     /// Whether the window is currently kept out of screen capture.
     window_private: Option<bool>,
     utc_offset: i64,
+    demo: Demo,
+}
+
+/// Scripted scenes for scripts/screenshots.sh, read from RJOT_DEMO_*
+/// variables in debug builds only.
+struct Demo {
+    tab: Tab,
+    /// Look as if Accessibility access were granted.
+    trusted: bool,
+    /// The card that looks hovered.
+    hover: Option<u64>,
+    /// The card whose color picker is open.
+    pick: Option<u64>,
+    settings: bool,
+    /// Leave the window capturable in sensitive mode.
+    capturable: bool,
+    /// File to create once the scene has settled.
+    ready: Option<std::path::PathBuf>,
+    frames: u32,
+}
+
+impl Demo {
+    fn from_env() -> Demo {
+        let var = |k: &str| std::env::var(k).ok().filter(|_| cfg!(debug_assertions));
+        Demo {
+            tab: match var("RJOT_DEMO_TAB").as_deref() {
+                Some("queue") => Tab::Queue,
+                Some("scratch") => Tab::Scratch,
+                _ => Tab::Notes,
+            },
+            trusted: var("RJOT_DEMO_TRUSTED").is_some(),
+            hover: var("RJOT_DEMO_HOVER").and_then(|v| v.parse().ok()),
+            pick: var("RJOT_DEMO_PICK").and_then(|v| v.parse().ok()),
+            settings: var("RJOT_DEMO_SETTINGS").is_some(),
+            capturable: var("RJOT_DEMO_CAPTURABLE").is_some(),
+            ready: var("RJOT_DEMO_READY").map(Into::into),
+            frames: 0,
+        }
+    }
+
+    /// Popups opened by the scene stay open only for the first frames;
+    /// after that they're left to egui.
+    fn opening(&self) -> bool {
+        self.frames < 3
+    }
 }
 
 impl App {
@@ -105,16 +150,11 @@ impl App {
         theme::init(&cc.egui_ctx, &settings.theme, settings.appearance);
         let store = Arc::new(Mutex::new(store));
         let signals = capture::start(store.clone(), cc.egui_ctx.clone());
-        // Debug builds: RJOT_DEMO_TAB=queue|scratch opens on that tab, for screenshots.
-        let tab = match std::env::var("RJOT_DEMO_TAB").ok().filter(|_| cfg!(debug_assertions)).as_deref() {
-            Some("queue") => Tab::Queue,
-            Some("scratch") => Tab::Scratch,
-            _ => Tab::Notes,
-        };
+        let demo = Demo::from_env();
         App {
             store,
             signals,
-            tab,
+            tab: demo.tab,
             drafts: Default::default(),
             search: None,
             color_filter: None,
@@ -124,7 +164,7 @@ impl App {
             expanded: HashSet::new(),
             flash: None,
             toast: error.map(|text| Toast { text, undo: None, until: f64::INFINITY }),
-            trusted: macos::trusted(),
+            trusted: demo.trusted || macos::trusted(),
             trust_checked: 0.0,
             quick: false,
             scratch,
@@ -132,6 +172,7 @@ impl App {
             settings,
             window_private: None,
             utc_offset: macos::utc_offset(),
+            demo,
         }
     }
 
@@ -288,6 +329,9 @@ impl App {
 
     fn settings_button(&mut self, ui: &mut Ui) {
         let r = icon_button(ui, Svg::Sliders, "Settings");
+        if self.demo.settings && self.demo.opening() {
+            egui::Popup::open_id(ui.ctx(), r.id.with("popup"));
+        }
         egui::Popup::menu(&r)
             .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
             .show(|ui| {
@@ -513,8 +557,13 @@ impl App {
     fn card(&mut self, ui: &mut Ui, item: &Item, now: i64, actions: &mut Vec<Action>) {
         let hover_id = Id::new(("card-hover", item.id));
         let color_popup = Id::new(("color-popup", item.id));
+        if self.demo.pick == Some(item.id) && self.demo.opening() {
+            egui::Popup::open_id(ui.ctx(), color_popup);
+        }
         let picking = egui::Popup::is_id_open(ui.ctx(), color_popup);
-        let hovered = picking || ui.data(|d| d.get_temp::<bool>(hover_id)).unwrap_or(false);
+        let hovered = picking
+            || self.demo.hover == Some(item.id)
+            || ui.data(|d| d.get_temp::<bool>(hover_id)).unwrap_or(false);
         let t = ui.input(|i| i.time);
         let glow = match self.flash {
             Some((id, at)) if id == item.id && t - at < FLASH_SECS => {
@@ -819,7 +868,9 @@ impl eframe::App for App {
         theme::sync(ctx);
         if self.window_private != Some(self.settings.sensitive) {
             self.window_private = Some(self.settings.sensitive);
-            macos::set_window_private(frame, self.settings.sensitive);
+            if !self.demo.capturable {
+                macos::set_window_private(frame, self.settings.sensitive);
+            }
         }
         let now = ctx.input(|i| i.time);
         self.handle_signals(ctx, now);
@@ -879,6 +930,15 @@ impl eframe::App for App {
             });
         for action in actions {
             self.apply(ctx, action);
+        }
+
+        self.demo.frames = self.demo.frames.saturating_add(1);
+        if let Some(ready) = &self.demo.ready {
+            if self.demo.frames == 12 {
+                let _ = std::fs::write(ready, "");
+            } else if self.demo.frames < 12 {
+                ctx.request_repaint();
+            }
         }
     }
 

@@ -5,7 +5,8 @@ members = ["crates/core", "crates/app"]
 [workspace.package]
 version = "0.0.1-alpha"
 edition = "2024"
-license = "MIT OR Apache-2.0"
+license = "MIT"
+repository = "https://github.com/yoouTaro/rjot"
 description = "A small Mac app that keeps the text you highlight: double-tap Shift to save a selection."
 keywords = ["notes", "clipboard", "macos", "egui"]
 categories = ["gui"]
