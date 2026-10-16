@@ -14,6 +14,33 @@ pub enum Kind {
     Prompt,
 }
 
+/// A color label on a note or prompt.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Color {
+    Red,
+    Orange,
+    Yellow,
+    Green,
+    Blue,
+    Purple,
+}
+
+impl Color {
+    pub const ALL: [Color; 6] = [Color::Red, Color::Orange, Color::Yellow, Color::Green, Color::Blue, Color::Purple];
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Color::Red => "Red",
+            Color::Orange => "Orange",
+            Color::Yellow => "Yellow",
+            Color::Green => "Green",
+            Color::Blue => "Blue",
+            Color::Purple => "Purple",
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Item {
     pub id: u64,
@@ -26,6 +53,8 @@ pub struct Item {
     pub created: i64,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub done: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<Color>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -123,7 +152,7 @@ impl Store {
         }
         let id = self.data.next_id.max(1);
         self.data.next_id = id + 1;
-        self.data.items.push(Item { id, kind, text: text.to_string(), source, created: now, done: false });
+        self.data.items.push(Item { id, kind, text: text.to_string(), source, created: now, done: false, color: None });
         Some(id)
     }
 
@@ -152,6 +181,12 @@ impl Store {
     pub fn set_text(&mut self, id: u64, text: &str) {
         if let Some(i) = self.get_mut(id) {
             i.text = text.to_string();
+        }
+    }
+
+    pub fn set_color(&mut self, id: u64, color: Option<Color>) {
+        if let Some(i) = self.get_mut(id) {
+            i.color = color;
         }
     }
 
@@ -208,11 +243,14 @@ mod tests {
         let a = s.add(Kind::Note, "hello", Some("Safari".into()), 100).unwrap();
         let b = s.add(Kind::Prompt, "ask about x", None, 101).unwrap();
         s.set_done(b, true);
+        s.set_color(a, Some(Color::Green));
         s.set_scratch("draft".into());
         s.save().unwrap();
 
         let s = Store::open(&path).unwrap();
         assert_eq!(s.get(a).unwrap().source.as_deref(), Some("Safari"));
+        assert_eq!(s.get(a).unwrap().color, Some(Color::Green));
+        assert_eq!(s.get(b).unwrap().color, None);
         assert!(s.get(b).unwrap().done);
         assert_eq!(s.scratch(), "draft");
         assert_eq!(s.count(Kind::Prompt), 0);
@@ -269,7 +307,7 @@ mod tests {
 
     #[test]
     fn search() {
-        let item = Item { id: 1, kind: Kind::Note, text: "Rust borrow checker".into(), source: Some("Claude".into()), created: 0, done: false };
+        let item = Item { id: 1, kind: Kind::Note, text: "Rust borrow checker".into(), source: Some("Claude".into()), created: 0, done: false, color: None };
         assert!(matches(&item, "borrow claude"));
         assert!(matches(&item, ""));
         assert!(!matches(&item, "python"));

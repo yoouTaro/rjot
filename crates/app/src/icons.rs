@@ -16,6 +16,10 @@ pub enum Svg {
     ListPlus,
     /// Move a prompt back to notes.
     StickyNote,
+    /// Set a color label.
+    Tag,
+    /// Filter by color label.
+    ListFilter,
 }
 
 impl Svg {
@@ -28,6 +32,8 @@ impl Svg {
             Svg::Search => r#"<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>"#,
             Svg::X => r#"<path d="M18 6 6 18"/><path d="m6 6 12 12"/>"#,
             Svg::ListPlus => r#"<path d="M11 12H3"/><path d="M16 6H3"/><path d="M16 18H3"/><path d="M18 9v6"/><path d="M21 12h-6"/>"#,
+            Svg::Tag => r#"<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="white"/>"#,
+            Svg::ListFilter => r#"<path d="M3 6h18"/><path d="M7 12h10"/><path d="M10 18h4"/>"#,
             Svg::StickyNote => r#"<path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8Z"/><path d="M15 3v4a2 2 0 0 0 2 2h4"/>"#,
         }
     }
@@ -75,7 +81,7 @@ mod tests {
 
     #[test]
     fn icons_rasterize() {
-        for svg in [Svg::Copy, Svg::Trash, Svg::Pencil, Svg::Check, Svg::Search, Svg::X, Svg::ListPlus, Svg::StickyNote] {
+        for svg in [Svg::Copy, Svg::Trash, Svg::Pencil, Svg::Check, Svg::Search, Svg::X, Svg::ListPlus, Svg::StickyNote, Svg::Tag, Svg::ListFilter] {
             let img = rasterize(svg, 32).expect("valid svg");
             assert!(img.pixels.iter().any(|p| p.a() > 200), "{svg:?} drew something");
         }

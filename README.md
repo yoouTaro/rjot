@@ -42,7 +42,7 @@ The ad-hoc signature changes with every build, and macOS ties the Accessibility 
 | ⌘W, close button | Hide (capture keeps working) |
 | ⌘Q | Quit |
 
-Double-click a card to edit it, and click a long card to expand it. Hover a card to copy, edit, move or delete it. Deleting can be undone from the status bar.
+Double-click a card to edit it, and click a long card to expand it. Hover a card to copy, edit, color-label, move or delete it. A label shows as a stripe on the card, and the filter button next to search shows one color at a time. Deleting can be undone from the status bar.
 
 ## Known limits
 

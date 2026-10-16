@@ -78,6 +78,26 @@ pub fn FAINT() -> Color32 { p().faint }
 pub fn ACCENT() -> Color32 { p().accent }
 pub fn INPUT() -> Color32 { p().input }
 
+/// The swatch for a color label, tuned per appearance.
+pub fn label(c: rjot_core::Color) -> Color32 {
+    use rjot_core::Color::*;
+    let dark = IS_DARK.load(Ordering::Relaxed);
+    match (c, dark) {
+        (Red, true) => hex(0xF7768E),
+        (Red, false) => hex(0xD6334F),
+        (Orange, true) => hex(0xFF9E64),
+        (Orange, false) => hex(0xD9701F),
+        (Yellow, true) => hex(0xE0AF68),
+        (Yellow, false) => hex(0xB8860B),
+        (Green, true) => hex(0x9ECE6A),
+        (Green, false) => hex(0x3E8E41),
+        (Blue, true) => hex(0x7AA2F7),
+        (Blue, false) => hex(0x2F6FDE),
+        (Purple, true) => hex(0xBB9AF7),
+        (Purple, false) => hex(0x8250DF),
+    }
+}
+
 /// `color` laid over `base` at strength `t`.
 pub fn tint(base: Color32, color: Color32, t: f32) -> Color32 {
     let mix = |a: u8, b: u8| (a as f32 + (b as f32 - a as f32) * t).round() as u8;

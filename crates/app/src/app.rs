@@ -9,7 +9,7 @@ use eframe::egui::{
     RichText, Sense, Stroke, TextFormat, TextStyle, Ui, text::LayoutJob, vec2,
 };
 use rjot_core::store::matches;
-use rjot_core::{Item, Kind, Store, time};
+use rjot_core::{Color, Item, Kind, Store, time};
 use std::collections::HashSet;
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
@@ -54,6 +54,7 @@ enum Action {
     CancelEdit,
     Expand(u64),
     ClearDone,
+    SetColor(u64, Option<Color>),
 }
 
 /// Lines a card shows before it's expanded.
@@ -69,6 +70,8 @@ pub struct App {
     drafts: [String; 2],
     /// Open search and its query.
     search: Option<String>,
+    /// Show only items with this color label.
+    color_filter: Option<Color>,
     focus_search: bool,
     focus_composer: bool,
     editing: Option<(u64, String)>,
@@ -109,6 +112,7 @@ impl App {
             tab,
             drafts: Default::default(),
             search: None,
+            color_filter: None,
             focus_search: false,
             focus_composer: false,
             editing: None,
@@ -236,6 +240,7 @@ impl App {
             });
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 if self.tab != Tab::Scratch {
+                    self.color_filter_button(ui);
                     let open = self.search.is_some();
                     if icon_button(ui, if open { Svg::X } else { Svg::Search }, if open { "Close search" } else { "Search  ⌘F" }).clicked() {
                         if open {
@@ -247,6 +252,43 @@ impl App {
                     }
                 }
             });
+        });
+    }
+
+    /// Filter by color label: a list icon, or the chosen color's dot.
+    fn color_filter_button(&mut self, ui: &mut Ui) {
+        let tip = match self.color_filter {
+            Some(c) => format!("Showing {} only", c.name().to_lowercase()),
+            None => "Filter by color".to_string(),
+        };
+        let r = match self.color_filter {
+            Some(c) => {
+                let (rect, r) = ui.allocate_exact_size(vec2(24.0, 22.0), Sense::click());
+                if r.hovered() {
+                    ui.painter().rect_filled(rect, CornerRadius::same(6), theme::RAISE());
+                }
+                ui.painter().circle_filled(rect.center(), 5.5, theme::label(c));
+                r.on_hover_text(tip)
+            }
+            None => icon_button(ui, Svg::ListFilter, &tip),
+        };
+        let kind = self.tab.kind().unwrap_or(Kind::Note);
+        let counts: Vec<usize> = {
+            let s = self.store.lock().unwrap();
+            Color::ALL.iter().map(|c| s.items(kind).filter(|i| i.color == Some(*c)).count()).collect()
+        };
+        egui::Popup::menu(&r).show(|ui| {
+            ui.set_min_width(150.0);
+            if ui.selectable_label(self.color_filter.is_none(), "All").clicked() {
+                self.color_filter = None;
+            }
+            ui.separator();
+            for (c, n) in Color::ALL.into_iter().zip(counts) {
+                let selected = self.color_filter == Some(c);
+                if color_row(ui, c, n, selected).clicked() {
+                    self.color_filter = if selected { None } else { Some(c) };
+                }
+            }
         });
     }
 
@@ -347,11 +389,18 @@ impl App {
         let query = self.search.clone().unwrap_or_default();
         let (open, done): (Vec<Item>, Vec<Item>) = {
             let s = self.store.lock().unwrap();
-            s.items(kind).filter(|i| matches(i, &query)).cloned().partition(|i| !i.done)
+            let color = self.color_filter;
+            s.items(kind)
+                .filter(|i| matches(i, &query) && color.is_none_or(|c| i.color == Some(c)))
+                .cloned()
+                .partition(|i| !i.done)
         };
         if open.is_empty() && done.is_empty() {
             if !query.trim().is_empty() {
                 empty_state(ui, "No matches", None);
+            } else if let Some(c) = self.color_filter {
+                let what = if kind == Kind::Note { "notes" } else { "prompts" };
+                empty_state(ui, &format!("No {} {what}", c.name().to_lowercase()), Some("Hover a card and use the tag button to label it."));
             } else if kind == Kind::Note {
                 empty_state(ui, "Nothing saved yet", Some("Select text in any app and double-tap ⇧. It lands here."));
             } else {
@@ -382,7 +431,9 @@ impl App {
 
     fn card(&mut self, ui: &mut Ui, item: &Item, now: i64, actions: &mut Vec<Action>) {
         let hover_id = Id::new(("card-hover", item.id));
-        let hovered = ui.data(|d| d.get_temp::<bool>(hover_id)).unwrap_or(false);
+        let color_popup = Id::new(("color-popup", item.id));
+        let picking = egui::Popup::is_id_open(ui.ctx(), color_popup);
+        let hovered = picking || ui.data(|d| d.get_temp::<bool>(hover_id)).unwrap_or(false);
         let t = ui.input(|i| i.time);
         let glow = match self.flash {
             Some((id, at)) if id == item.id && t - at < FLASH_SECS => {
@@ -450,6 +501,20 @@ impl App {
                         if icon_button(ui, Svg::Pencil, "Edit").clicked() {
                             actions.push(Action::Edit(item.id));
                         }
+                        let tag = icon_button(ui, Svg::Tag, "Color");
+                        egui::Popup::from_toggle_button_response(&tag).id(color_popup).show(|ui| {
+                            ui.horizontal(|ui| {
+                                ui.spacing_mut().item_spacing.x = 4.0;
+                                for c in Color::ALL {
+                                    if swatch(ui, Some(c), item.color == Some(c)).on_hover_text(c.name()).clicked() {
+                                        actions.push(Action::SetColor(item.id, Some(c)));
+                                    }
+                                }
+                                if item.color.is_some() && swatch(ui, None, false).on_hover_text("No color").clicked() {
+                                    actions.push(Action::SetColor(item.id, None));
+                                }
+                            });
+                        });
                         let copy_tip = if item.kind == Kind::Prompt && !item.done { "Copy and check off" } else { "Copy" };
                         if icon_button(ui, Svg::Copy, copy_tip).clicked() {
                             actions.push(Action::Copy(item.id));
@@ -457,6 +522,12 @@ impl App {
                     });
                 });
             });
+        if let Some(c) = item.color {
+            let r = frame.response.rect;
+            let stripe = Rect::from_min_max(egui::pos2(r.left() + 1.0, r.top() + 10.0), egui::pos2(r.left() + 4.0, r.bottom() - 10.0));
+            let color = if item.done { theme::label(c).gamma_multiply(0.45) } else { theme::label(c) };
+            ui.painter().rect_filled(stripe, CornerRadius::same(2), color);
+        }
         let now_hovered = ui.rect_contains_pointer(frame.response.rect);
         if now_hovered != hovered {
             ui.data_mut(|d| d.insert_temp(hover_id, now_hovered));
@@ -531,6 +602,10 @@ impl App {
                 if !self.expanded.remove(&id) {
                     self.expanded.insert(id);
                 }
+            }
+            Action::SetColor(id, color) => {
+                self.change(|s| s.set_color(id, color));
+                egui::Popup::close_all(ctx);
             }
             Action::ClearDone => {
                 let removed = self.change(|s| s.clear_done());
@@ -715,6 +790,43 @@ fn segment(ui: &mut Ui, label: &str, count: Option<usize>, selected: bool) -> Re
         ui.painter().rect_filled(rect, 6.0, theme::tint(theme::RAISE(), theme::TEXT(), 0.04));
     }
     ui.painter().galley(rect.center() - galley.size() / 2.0, galley, color);
+    r
+}
+
+/// A round color swatch; `None` is the "no color" swatch (a crossed ring).
+fn swatch(ui: &mut Ui, color: Option<Color>, selected: bool) -> Response {
+    let (rect, r) = ui.allocate_exact_size(vec2(22.0, 22.0), Sense::click());
+    let c = rect.center();
+    match color {
+        Some(color) => {
+            let fill = theme::label(color);
+            ui.painter().circle_filled(c, if r.hovered() { 8.0 } else { 7.0 }, fill);
+            if selected {
+                ui.painter().circle_stroke(c, 10.0, Stroke::new(1.5_f32, fill));
+            }
+        }
+        None => {
+            let ink = if r.hovered() { theme::TEXT() } else { theme::MUTED() };
+            ui.painter().circle_stroke(c, 7.0, Stroke::new(1.2_f32, ink));
+            ui.painter().line_segment([c + vec2(-4.5, 4.5), c + vec2(4.5, -4.5)], Stroke::new(1.2_f32, ink));
+        }
+    }
+    r.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A row in the color filter menu: dot, name, count.
+fn color_row(ui: &mut Ui, color: Color, count: usize, selected: bool) -> Response {
+    let (rect, r) = ui.allocate_exact_size(vec2(ui.available_width(), 24.0), Sense::click());
+    if selected || r.hovered() {
+        ui.painter().rect_filled(rect, CornerRadius::same(5), theme::RAISE());
+    }
+    let mid = rect.left_center();
+    ui.painter().circle_filled(mid + vec2(12.0, 0.0), 5.0, theme::label(color));
+    let font = FontId::proportional(13.0);
+    ui.painter().text(mid + vec2(26.0, 0.0), egui::Align2::LEFT_CENTER, color.name(), font.clone(), theme::TEXT());
+    if count > 0 {
+        ui.painter().text(rect.right_center() - vec2(8.0, 0.0), egui::Align2::RIGHT_CENTER, count.to_string(), font, theme::FAINT());
+    }
     r
 }
 
