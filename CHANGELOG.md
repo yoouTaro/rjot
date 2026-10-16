@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **Menu bar icon:** the last five captures (click to copy), Quick note, Open rjot, Pause capture, Launch at login (macOS 13+) and Quit.
+- **⌥⇧V paste picker:** a list of queued prompts, filtered as you type. ↩ pastes the chosen one into the app you were in (your clipboard is put back) and checks it off.
+- **Page links:** captures from Safari, Chrome, Arc, Brave, Edge and Vivaldi keep the page's URL and title; the card links back to it. macOS asks once per browser.
+- **Markdown copy:** pick a folder (an Obsidian vault, say) and rjot keeps an `rjot` folder there up to date, with Notes, Queue, Archive, images and Scratch.md. It only ever deletes files it wrote.
+- **Pin and archive:** pinned cards stay at the top; archived cards leave the list but stay one click away.
+- **Image notes:** select an image and tap Shift twice.
+- **Check for updates…** in settings: downloads the next release from GitHub, checks its SHA-256 and restarts into it. rjot never checks on its own.
+- Pause capture from settings or the menu bar.
+
 ## 0.0.1-alpha — 2026-10-16
 
 The first release.

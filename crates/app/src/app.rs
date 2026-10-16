@@ -2,16 +2,20 @@
 //! check off) and Scratch (one free-form pad).
 
 use crate::capture::{self, Signal};
+use crate::exporter::Exporter;
 use crate::icons::{self, Svg};
+use crate::statusbar::{self, MenuEvent, MenuState, StatusBar};
 use crate::{macos, theme};
 use eframe::egui::{
     self, Align, CornerRadius, FontId, Frame, Id, Key, Layout, Margin, Modifiers, Rect, Response,
     RichText, Sense, Stroke, TextFormat, TextStyle, Ui, text::LayoutJob, vec2,
 };
 use rjot_core::store::matches;
+use rjot_core::update::{self, Release};
 use rjot_core::{Appearance, Color, Item, Kind, Settings, Store, time};
-use std::collections::HashSet;
-use std::sync::mpsc::Receiver;
+use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
+use std::sync::mpsc::{Receiver, Sender, channel};
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Copy, PartialEq)]
@@ -55,6 +59,33 @@ enum Action {
     Expand(u64),
     ClearDone,
     SetColor(u64, Option<Color>),
+    Pin(u64, bool),
+    Archive(u64, bool),
+}
+
+/// ⌥⇧V's list of queued prompts, for pasting into `front`.
+struct Picker {
+    front: macos::Front,
+    query: String,
+    selected: usize,
+    focus: bool,
+}
+
+enum UpdateState {
+    Idle,
+    Checking,
+    UpToDate,
+    Available(Release),
+    Installing,
+    Failed(String),
+}
+
+/// Results of work done off the UI thread.
+enum Done {
+    UpdateChecked(Result<Option<Release>, String>),
+    UpdateInstalled(Result<PathBuf, String>),
+    /// A picker paste finished; the prompt is checked off only on success.
+    Pasted { id: u64, target: String, result: Result<(), String> },
 }
 
 /// Lines a card shows before it's expanded.
@@ -91,6 +122,24 @@ pub struct App {
     window_private: Option<bool>,
     utc_offset: i64,
     demo: Demo,
+    /// The menu bar icon and its click events.
+    status: Option<(StatusBar, Receiver<MenuEvent>)>,
+    /// Ids behind the menu's recent captures, in menu order.
+    recent_ids: Vec<u64>,
+    picker: Option<Picker>,
+    show_archived: bool,
+    /// Launch at login: None when this macOS or build can't do it.
+    login: Option<bool>,
+    update: UpdateState,
+    done_tx: Sender<Done>,
+    done_rx: Receiver<Done>,
+    /// Decoded image notes, by file name (None: couldn't be read).
+    images: HashMap<String, Option<egui::TextureHandle>>,
+    /// Set by Quit: let the window close instead of hiding it.
+    quitting: bool,
+    exporter: Exporter,
+    /// What the menu last showed: (store revision, paused, login).
+    menu_seen: Option<(u64, bool, Option<bool>)>,
 }
 
 /// Scripted scenes for scripts/screenshots.sh, read from RJOT_DEMO_*
@@ -106,6 +155,8 @@ struct Demo {
     settings: bool,
     /// Leave the window capturable in sensitive mode.
     capturable: bool,
+    /// Open the ⌥⇧V paste picker as if Safari were in front.
+    picker: bool,
     /// File to create once the scene has settled.
     ready: Option<std::path::PathBuf>,
     frames: u32,
@@ -125,6 +176,7 @@ impl Demo {
             pick: var("RJOT_DEMO_PICK").and_then(|v| v.parse().ok()),
             settings: var("RJOT_DEMO_SETTINGS").is_some(),
             capturable: var("RJOT_DEMO_CAPTURABLE").is_some(),
+            picker: var("RJOT_DEMO_PICKER").is_some(),
             ready: var("RJOT_DEMO_READY").map(Into::into),
             frames: 0,
         }
@@ -149,8 +201,17 @@ impl App {
         let settings = store.settings().clone();
         theme::init(&cc.egui_ctx, &settings.theme, settings.appearance);
         let store = Arc::new(Mutex::new(store));
-        let signals = capture::start(store.clone(), cc.egui_ctx.clone());
+        let exporter = Exporter::new(cc.egui_ctx.clone());
+        let signals = capture::start(store.clone(), exporter.clone(), cc.egui_ctx.clone());
         let demo = Demo::from_env();
+        let status = if cfg!(debug_assertions) && demo.ready.is_some() { None } else { StatusBar::new(&cc.egui_ctx) };
+        let (done_tx, done_rx) = channel();
+        let picker = demo.picker.then(|| Picker {
+            front: macos::Front { name: Some("Safari".into()), bundle: None, pid: 0 },
+            query: String::new(),
+            selected: 0,
+            focus: true,
+        });
         App {
             store,
             signals,
@@ -173,6 +234,18 @@ impl App {
             window_private: None,
             utc_offset: macos::utc_offset(),
             demo,
+            status,
+            recent_ids: Vec::new(),
+            picker,
+            show_archived: false,
+            login: macos::login_supported().then(macos::login_enabled),
+            update: UpdateState::Idle,
+            done_tx,
+            done_rx,
+            images: HashMap::new(),
+            quitting: false,
+            exporter,
+            menu_seen: None,
         }
     }
 
@@ -184,6 +257,7 @@ impl App {
         if let Err(e) = store.save() {
             self.notify(format!("Couldn't save {}: {e}", store.path().display()), None);
         }
+        self.exporter.request(store.export_job());
         out
     }
 
@@ -225,16 +299,152 @@ impl App {
                     };
                     self.notify(text, None);
                 }
-                Signal::QuickNote => {
-                    if self.tab == Tab::Scratch {
-                        self.tab = Tab::Notes;
-                    }
-                    self.quick = true;
-                    self.focus_composer = true;
+                Signal::QuickNote => self.open_quick_note(ctx),
+                Signal::PastePicker(front) => {
+                    self.picker = Some(Picker { front, query: String::new(), selected: 0, focus: true });
                     ctx.send_viewport_cmd(egui::ViewportCommand::Visible(true));
                     ctx.send_viewport_cmd(egui::ViewportCommand::Focus);
                 }
                 Signal::Error(e) => self.notify(e, None),
+            }
+        }
+        while let Ok(done) = self.done_rx.try_recv() {
+            match done {
+                Done::UpdateChecked(Ok(Some(r))) => self.update = UpdateState::Available(r),
+                Done::UpdateChecked(Ok(None)) => {
+                    self.update = UpdateState::UpToDate;
+                    self.notify(format!("rjot {} is up to date", update::CURRENT), None);
+                }
+                Done::UpdateChecked(Err(e)) | Done::UpdateInstalled(Err(e)) => {
+                    self.notify(e.clone(), None);
+                    self.update = UpdateState::Failed(e);
+                }
+                // The new copy starts a moment after this one has saved and quit.
+                Done::UpdateInstalled(Ok(app)) => match update::relaunch(&app) {
+                    Ok(()) => self.quit(ctx),
+                    Err(e) => {
+                        self.notify(e.clone(), None);
+                        self.update = UpdateState::Failed(e);
+                    }
+                },
+                Done::Pasted { id, target, result: Ok(()) } => {
+                    self.change(|s| s.set_done(id, true));
+                    self.notify(format!("Pasted into {target} and checked off"), Some(Undo::Uncheck(id)));
+                }
+                Done::Pasted { result: Err(e), .. } => self.notify(e, None),
+            }
+        }
+    }
+
+    /// Write the Markdown copy right away (on quit), skipping the wait.
+    fn export_now(&mut self) {
+        let job = self.store.lock().unwrap().export_job();
+        if let Some(job) = job
+            && let Err(e) = job.run()
+        {
+            eprintln!("rjot: markdown copy failed: {e}");
+        }
+    }
+
+    fn open_quick_note(&mut self, ctx: &egui::Context) {
+        if self.tab == Tab::Scratch {
+            self.tab = Tab::Notes;
+        }
+        self.picker = None;
+        self.quick = true;
+        self.focus_composer = true;
+        ctx.send_viewport_cmd(egui::ViewportCommand::Visible(true));
+        ctx.send_viewport_cmd(egui::ViewportCommand::Focus);
+    }
+
+    fn quit(&mut self, ctx: &egui::Context) {
+        self.flush_scratch();
+        self.export_now();
+        self.quitting = true;
+        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+    }
+
+    // ---- Menu bar ----
+
+    fn menu_events(&mut self, ctx: &egui::Context) {
+        let events: Vec<MenuEvent> = match &self.status {
+            Some((_, rx)) => rx.try_iter().collect(),
+            None => return,
+        };
+        for event in events {
+            match event {
+                MenuEvent::Open => {
+                    self.picker = None;
+                    macos::activate();
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Visible(true));
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Focus);
+                }
+                MenuEvent::QuickNote => {
+                    macos::activate();
+                    self.open_quick_note(ctx);
+                }
+                MenuEvent::TogglePause => {
+                    let paused = !self.settings.paused;
+                    self.set_settings(ctx, |s| s.paused = paused);
+                }
+                MenuEvent::ToggleLogin => self.toggle_login(),
+                MenuEvent::Quit => self.quit(ctx),
+                MenuEvent::CopyRecent(i) => {
+                    let item = self.recent_ids.get(i).and_then(|id| self.store.lock().unwrap().get(*id).cloned());
+                    if let Some(item) = item {
+                        self.copy_item(&item);
+                    }
+                }
+            }
+        }
+    }
+
+    fn toggle_login(&mut self) {
+        let Some(on) = self.login else { return };
+        match macos::set_login(!on) {
+            Ok(()) => self.login = Some(macos::login_enabled()),
+            Err(e) => self.notify(e, None),
+        }
+    }
+
+    /// Keep the menu's recent list and switches in step with the store.
+    fn sync_menu(&mut self) {
+        let Some((bar, _)) = &mut self.status else { return };
+        let s = self.store.lock().unwrap();
+        let seen = (s.revision(), self.settings.paused, self.login);
+        if self.menu_seen == Some(seen) {
+            return;
+        }
+        self.menu_seen = Some(seen);
+        let mut recent: Vec<&Item> = s.items(Kind::Note).filter(|i| !i.archived).collect();
+        recent.sort_by_key(|i| std::cmp::Reverse(i.created));
+        recent.truncate(5);
+        self.recent_ids = recent.iter().map(|i| i.id).collect();
+        let state = MenuState {
+            recent: recent.iter().map(|i| statusbar::menu_label(&i.text, i.image.is_some())).collect(),
+            paused: self.settings.paused,
+            login: self.login,
+        };
+        drop(s);
+        bar.update(state);
+    }
+
+    /// Copy an item's text, or its image for image notes.
+    fn copy_item(&mut self, item: &Item) {
+        match &item.image {
+            Some(name) if item.text.trim().is_empty() => {
+                let path = self.store.lock().unwrap().images_dir().join(name);
+                match std::fs::read(&path) {
+                    Ok(png) => {
+                        macos::copy_image(&png);
+                        self.notify("Copied image", None);
+                    }
+                    Err(e) => self.notify(format!("Couldn't read the image: {e}"), None),
+                }
+            }
+            _ => {
+                macos::copy_text(&item.text);
+                self.notify("Copied", None);
             }
         }
     }
@@ -274,6 +484,7 @@ impl App {
             self.focus_composer = true;
         }
         if close {
+            self.picker = None;
             macos::hide();
         }
         let nothing_focused = ctx.memory(|m| m.focused().is_none());
@@ -371,13 +582,129 @@ impl App {
                 if switch_row(ui, &mut sound, "Sound on capture", "A short pop when a selection is saved.").changed() {
                     self.set_settings(ui.ctx(), |s| s.sound = sound);
                 }
+                let mut paused = self.settings.paused;
+                if switch_row(ui, &mut paused, "Pause capture", "Double-tap ⇧ does nothing until you switch this back off.").changed() {
+                    self.set_settings(ui.ctx(), |s| s.paused = paused);
+                }
+                if let Some(on) = self.login {
+                    let mut login = on;
+                    if switch_row(ui, &mut login, "Launch at login", "Start rjot when you log in, hidden in the menu bar.").changed() {
+                        self.toggle_login();
+                    }
+                }
+
                 ui.separator();
+                section_label(ui, "Markdown copy");
+                self.export_row(ui);
+
+                ui.separator();
+                self.update_row(ui);
                 let path = self.store.lock().unwrap().path().to_path_buf();
                 let reveal = egui::Button::new(RichText::new("Show notes file in Finder").color(theme::MUTED())).frame(false);
                 if ui.add(reveal).clicked() {
                     let _ = std::process::Command::new("open").arg("-R").arg(&path).spawn();
                 }
             });
+    }
+
+    /// Where the Markdown copy goes, and the buttons to change it.
+    fn export_row(&mut self, ui: &mut Ui) {
+        match self.settings.export_dir.clone() {
+            Some(dir) => {
+                let shown = rjot_core::export::root(&dir);
+                let home = std::env::var("HOME").unwrap_or_default();
+                let label = shown.display().to_string().replacen(&home, "~", 1);
+                ui.label(RichText::new(label).small().color(theme::MUTED()));
+                ui.horizontal(|ui| {
+                    if ui.small_button("Show").clicked() {
+                        let _ = std::process::Command::new("open").arg(&shown).spawn();
+                    }
+                    if ui.small_button("Change…").clicked() {
+                        self.pick_export_dir(ui.ctx());
+                    }
+                    if ui.small_button("Stop").clicked() {
+                        self.set_settings(ui.ctx(), |s| s.export_dir = None);
+                        self.notify("Markdown copy stopped; the files stay where they are", None);
+                    }
+                });
+            }
+            None => {
+                ui.label(
+                    RichText::new("Keep every note as a .md file in a folder you choose, like an Obsidian vault.")
+                        .small()
+                        .color(theme::FAINT()),
+                );
+                if ui.small_button("Choose folder…").clicked() {
+                    self.pick_export_dir(ui.ctx());
+                }
+            }
+        }
+    }
+
+    fn pick_export_dir(&mut self, ctx: &egui::Context) {
+        let Some(dir) = rfd::FileDialog::new().set_title("Keep a Markdown copy of rjot in…").pick_folder() else { return };
+        self.set_settings(ctx, |s| s.export_dir = Some(dir));
+        if self.toast.is_none() {
+            self.notify("Markdown copy is on: rjot writes an rjot folder there", None);
+        }
+    }
+
+    fn update_row(&mut self, ui: &mut Ui) {
+        ui.horizontal(|ui| {
+            ui.label(RichText::new(format!("rjot {}", update::CURRENT)).small().color(theme::FAINT()));
+            ui.with_layout(Layout::right_to_left(Align::Center), |ui| match &self.update {
+                UpdateState::Checking => {
+                    ui.label(RichText::new("Checking…").small().color(theme::MUTED()));
+                }
+                UpdateState::Installing => {
+                    ui.label(RichText::new("Installing…").small().color(theme::MUTED()));
+                }
+                UpdateState::Available(r) => {
+                    let label = format!("Install {}", r.version);
+                    if ui.small_button(label).clicked() {
+                        self.install_update(ui.ctx());
+                    }
+                }
+                state => {
+                    let tip = match state {
+                        UpdateState::Failed(e) => format!("Last check failed: {e}"),
+                        _ => "Asks GitHub for a newer release. rjot never does this on its own.".to_string(),
+                    };
+                    if ui.small_button("Check for updates…").on_hover_text(tip).clicked() {
+                        self.check_update(ui.ctx());
+                    }
+                }
+            });
+        });
+    }
+
+    fn check_update(&mut self, ctx: &egui::Context) {
+        self.update = UpdateState::Checking;
+        let tx = self.done_tx.clone();
+        let ctx = ctx.clone();
+        std::thread::spawn(move || {
+            let _ = tx.send(Done::UpdateChecked(update::check()));
+            ctx.request_repaint();
+        });
+    }
+
+    fn install_update(&mut self, ctx: &egui::Context) {
+        let UpdateState::Available(release) = &self.update else { return };
+        let release = release.clone();
+        let Some(app) = update::current_bundle() else {
+            // Not running from rjot.app (a dev build): open the release page.
+            macos::open_url(&release.page_url);
+            return;
+        };
+        self.update = UpdateState::Installing;
+        let tx = self.done_tx.clone();
+        let ctx = ctx.clone();
+        std::thread::spawn(move || {
+            let result = update::download(&release, &std::env::temp_dir())
+                .and_then(|zip| update::install(&zip, &app).map(|_| app));
+            let _ = tx.send(Done::UpdateInstalled(result));
+            ctx.request_repaint();
+        });
     }
 
     /// Filter by color label: a list icon, or the chosen color's dot.
@@ -512,14 +839,38 @@ impl App {
 
     fn list(&mut self, ui: &mut Ui, kind: Kind, actions: &mut Vec<Action>) {
         let query = self.search.clone().unwrap_or_default();
-        let (open, done): (Vec<Item>, Vec<Item>) = {
+        let archived_view = self.show_archived;
+        let (mut open, done, archived_count): (Vec<Item>, Vec<Item>, usize) = {
             let s = self.store.lock().unwrap();
             let color = self.color_filter;
-            s.items(kind)
-                .filter(|i| matches(i, &query) && color.is_none_or(|c| i.color == Some(c)))
+            let (open, done) = s
+                .items(kind)
+                .filter(|i| i.archived == archived_view && matches(i, &query) && color.is_none_or(|c| i.color == Some(c)))
                 .cloned()
-                .partition(|i| !i.done)
+                .partition(|i| !i.done || archived_view);
+            (open, done, s.count_archived(kind))
         };
+        // Pinned first; the sort is stable, so newest first within each.
+        open.sort_by_key(|i| !i.pinned);
+        if archived_view {
+            ui.horizontal(|ui| {
+                ui.label(RichText::new(format!("Archived · {}", open.len())).small().color(theme::FAINT()));
+                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    let back = egui::Button::new(RichText::new("Back to the list").small().color(theme::MUTED())).frame(false);
+                    if ui.add(back).clicked() {
+                        self.show_archived = false;
+                    }
+                });
+            });
+            if open.is_empty() {
+                empty_state(ui, "Nothing archived", Some("Archive a card to keep it without seeing it every day."));
+            }
+            let now = time::now();
+            for item in &open {
+                self.card(ui, item, now, actions);
+            }
+            return;
+        }
         if open.is_empty() && done.is_empty() {
             if !query.trim().is_empty() {
                 empty_state(ui, "No matches", None);
@@ -550,6 +901,13 @@ impl App {
             });
             for item in &done {
                 self.card(ui, item, now, actions);
+            }
+        }
+        if archived_count > 0 {
+            ui.add_space(8.0);
+            let show = egui::Button::new(RichText::new(format!("Archived · {archived_count}")).small().color(theme::FAINT())).frame(false);
+            if ui.add(show).on_hover_text("Show archived cards").clicked() {
+                self.show_archived = true;
             }
         }
     }
@@ -588,12 +946,18 @@ impl App {
                     self.edit_card(ui, actions);
                     return;
                 }
+                let blur = self.blur(ui);
+                if let Some(name) = &item.image {
+                    self.image_view(ui, name, blur);
+                }
                 ui.horizontal_top(|ui| {
                     if item.kind == Kind::Prompt && check_box(ui, item.done).clicked() {
                         actions.push(Action::Toggle(item.id));
                     }
+                    if item.text.trim().is_empty() {
+                        return;
+                    }
                     let expanded = self.expanded.contains(&item.id);
-                    let blur = self.blur(ui);
                     let galley = item_text(ui, item, expanded);
                     let truncated = galley.elided;
                     let r = if blur > 0.0 {
@@ -612,7 +976,14 @@ impl App {
                         r.on_hover_cursor(egui::CursorIcon::PointingHand);
                     }
                 });
+                if let Some(url) = &item.url {
+                    link_line(ui, url, item.title.as_deref());
+                }
                 ui.horizontal(|ui| {
+                    if item.pinned {
+                        let (r, _) = ui.allocate_exact_size(vec2(12.0, 12.0), Sense::hover());
+                        icons::paint(ui, Svg::Pin, r, theme::ACCENT());
+                    }
                     let when = time::label(item.created, now, self.utc_offset);
                     let meta = match &item.source {
                         Some(app) => format!("{app} · {when}"),
@@ -628,6 +999,16 @@ impl App {
                         if icon_button(ui, Svg::Trash, "Delete").clicked() {
                             actions.push(Action::Delete(item.id));
                         }
+                        let (svg, tip) = if item.archived { (Svg::ArchiveRestore, "Back to the list") } else { (Svg::Archive, "Archive") };
+                        if icon_button(ui, svg, tip).clicked() {
+                            actions.push(Action::Archive(item.id, !item.archived));
+                        }
+                        if !item.archived {
+                            let tip = if item.pinned { "Unpin" } else { "Pin to the top" };
+                            if icon_button(ui, Svg::Pin, tip).clicked() {
+                                actions.push(Action::Pin(item.id, !item.pinned));
+                            }
+                        }
                         let (to, svg, tip) = match item.kind {
                             Kind::Note => (Kind::Prompt, Svg::ListPlus, "Move to Queue"),
                             Kind::Prompt => (Kind::Note, Svg::StickyNote, "Move to Notes"),
@@ -635,7 +1016,7 @@ impl App {
                         if icon_button(ui, svg, tip).clicked() {
                             actions.push(Action::Move(item.id, to));
                         }
-                        if icon_button(ui, Svg::Pencil, "Edit").clicked() {
+                        if !item.text.trim().is_empty() && icon_button(ui, Svg::Pencil, "Edit").clicked() {
                             actions.push(Action::Edit(item.id));
                         }
                         let tag = icon_button(ui, Svg::Tag, "Color");
@@ -673,6 +1054,44 @@ impl App {
         ui.add_space(2.0);
     }
 
+    /// A captured image, scaled to the card; blurred into a quiet
+    /// placeholder in sensitive mode.
+    fn image_view(&mut self, ui: &mut Ui, name: &str, blur: f32) {
+        let texture = self.image_texture(ui.ctx(), name);
+        let Some(texture) = texture else {
+            ui.label(RichText::new("Image missing").small().color(theme::FAINT()));
+            return;
+        };
+        let size = texture.size_vec2();
+        let max_w = ui.available_width().min(300.0);
+        let scale = (max_w / size.x).min(160.0 / size.y).min(1.0);
+        let shown = size * scale;
+        if blur > 0.5 {
+            let (rect, _) = ui.allocate_exact_size(shown, Sense::hover());
+            ui.painter().rect_filled(rect, CornerRadius::same(6), theme::RAISE());
+            ui.painter().text(rect.center(), egui::Align2::CENTER_CENTER, "Image hidden", FontId::proportional(12.0), theme::FAINT());
+        } else {
+            ui.add(egui::Image::new((texture.id(), shown)).corner_radius(6));
+        }
+        ui.add_space(4.0);
+    }
+
+    /// Load an image note once, downscaled for the card.
+    fn image_texture(&mut self, ctx: &egui::Context, name: &str) -> Option<egui::TextureHandle> {
+        if let Some(t) = self.images.get(name) {
+            return t.clone();
+        }
+        let path = self.store.lock().unwrap().images_dir().join(name);
+        let texture = std::fs::read(&path).ok().and_then(|bytes| image::load_from_memory(&bytes).ok()).map(|img| {
+            let img = img.thumbnail(720, 440).to_rgba8();
+            let size = [img.width() as usize, img.height() as usize];
+            let color = egui::ColorImage::from_rgba_unmultiplied(size, img.as_raw());
+            ctx.load_texture(format!("note-{name}"), color, egui::TextureOptions::LINEAR)
+        });
+        self.images.insert(name.to_string(), texture.clone());
+        texture
+    }
+
     fn edit_card(&mut self, ui: &mut Ui, actions: &mut Vec<Action>) {
         let Some((_, text)) = &mut self.editing else { return };
         let id = Id::new("edit-card");
@@ -699,13 +1118,20 @@ impl App {
         match action {
             Action::Copy(id) => {
                 let Some(item) = self.store.lock().unwrap().get(id).cloned() else { return };
-                ctx.copy_text(item.text.clone());
                 if item.kind == Kind::Prompt && !item.done {
+                    ctx.copy_text(item.text.clone());
                     self.change(|s| s.set_done(id, true));
                     self.notify("Copied and checked off", Some(Undo::Uncheck(id)));
                 } else {
-                    self.notify("Copied", None);
+                    self.copy_item(&item);
                 }
+            }
+            Action::Pin(id, pinned) => {
+                self.change(|s| s.set_pinned(id, pinned));
+            }
+            Action::Archive(id, archived) => {
+                self.change(|s| s.set_archived(id, archived));
+                self.notify(if archived { "Archived" } else { "Back in the list" }, None);
             }
             Action::Delete(id) => {
                 if let Some(removed) = self.change(|s| s.remove(id)) {
@@ -760,6 +1186,110 @@ impl App {
                 }
             }),
             Undo::Uncheck(id) => self.change(|s| s.set_done(id, false)),
+        }
+    }
+
+    // ---- ⌥⇧V paste picker ----
+
+    /// Queued prompts to paste into the app that was in front: type to
+    /// filter, ↑↓ to choose, ↩ to paste, esc to go back.
+    fn picker(&mut self, ui: &mut Ui) {
+        let Some(p) = &mut self.picker else { return };
+        let prompts: Vec<Item> = {
+            let s = self.store.lock().unwrap();
+            let mut v: Vec<Item> = s.items(Kind::Prompt).filter(|i| !i.done && !i.archived && matches(i, &p.query)).cloned().collect();
+            v.sort_by_key(|i| !i.pinned);
+            v
+        };
+        let (up, down, enter, escape) = ui.input_mut(|i| {
+            (
+                i.consume_key(Modifiers::NONE, Key::ArrowUp),
+                i.consume_key(Modifiers::NONE, Key::ArrowDown),
+                i.consume_key(Modifiers::NONE, Key::Enter),
+                i.consume_key(Modifiers::NONE, Key::Escape),
+            )
+        });
+        if up {
+            p.selected = p.selected.saturating_sub(1);
+        }
+        if down && p.selected + 1 < prompts.len() {
+            p.selected += 1;
+        }
+        p.selected = p.selected.min(prompts.len().saturating_sub(1));
+        let target = p.front.name.clone().unwrap_or_else(|| "the app you were in".into());
+
+        ui.label(RichText::new(format!("Paste into {target}")).heading().color(theme::TEXT()));
+        ui.label(RichText::new("Type to filter · ↑↓ to choose · ↩ to paste · esc to go back").small().color(theme::FAINT()));
+        ui.add_space(8.0);
+        let mut chosen: Option<Item> = None;
+        Frame::new()
+            .fill(theme::INPUT())
+            .stroke(Stroke::new(1.0_f32, theme::ACCENT().gamma_multiply(0.55)))
+            .corner_radius(8)
+            .inner_margin(Margin::symmetric(10, 6))
+            .show(ui, |ui| {
+                let edit = egui::TextEdit::singleline(&mut p.query).frame(false).hint_text("Filter prompts").desired_width(f32::INFINITY);
+                let r = ui.add(edit);
+                if std::mem::take(&mut p.focus) || !r.has_focus() {
+                    r.request_focus();
+                }
+                if r.changed() {
+                    p.selected = 0;
+                }
+            });
+        ui.add_space(8.0);
+        if prompts.is_empty() {
+            let what = if p.query.trim().is_empty() { "No prompts queued" } else { "No matching prompts" };
+            empty_state(ui, what, Some("Write prompts in the Queue tab, then ⌥⇧V pastes them anywhere."));
+        }
+        egui::ScrollArea::vertical().auto_shrink(false).show(ui, |ui| {
+            for (i, item) in prompts.iter().enumerate() {
+                let selected = i == p.selected;
+                let fill = if selected { theme::tint(theme::SURFACE(), theme::ACCENT(), 0.14) } else { theme::SURFACE() };
+                let stroke = if selected { theme::ACCENT().gamma_multiply(0.7) } else { theme::BORDER() };
+                let r = Frame::new()
+                    .fill(fill)
+                    .stroke(Stroke::new(1.0_f32, stroke))
+                    .corner_radius(8)
+                    .inner_margin(Margin::symmetric(12, 8))
+                    .show(ui, |ui| {
+                        ui.set_width(ui.available_width());
+                        let mut job = LayoutJob::single_section(item.text.trim().to_string(), TextFormat::simple(FontId::proportional(13.5), theme::TEXT()));
+                        job.wrap.max_width = ui.available_width();
+                        job.wrap.max_rows = 3;
+                        ui.label(ui.painter().layout_job(job));
+                    })
+                    .response
+                    .interact(Sense::click());
+                if selected && (up || down) {
+                    r.scroll_to_me(None);
+                }
+                if r.clicked() {
+                    chosen = Some(item.clone());
+                }
+                ui.add_space(2.0);
+            }
+        });
+        if enter {
+            chosen = prompts.get(p.selected).cloned();
+        }
+        if let Some(item) = chosen {
+            let pid = p.front.pid;
+            self.picker = None;
+            macos::hide();
+            let (tx, ctx, id, text) = (self.done_tx.clone(), ui.ctx().clone(), item.id, item.text.clone());
+            std::thread::spawn(move || {
+                let result = macos::paste_into(pid, &text);
+                let _ = tx.send(Done::Pasted { id, target, result });
+                ctx.request_repaint();
+            });
+        } else if escape {
+            let pid = p.front.pid;
+            self.picker = None;
+            macos::hide();
+            if let Some(app) = objc2_app_kit::NSRunningApplication::runningApplicationWithProcessIdentifier(pid) {
+                app.activateWithOptions(objc2_app_kit::NSApplicationActivationOptions::empty());
+            }
         }
     }
 
@@ -852,6 +1382,15 @@ impl App {
                     }
                 }
                 ui.ctx().request_repaint_after(std::time::Duration::from_millis(500));
+            } else if let UpdateState::Available(r) = &self.update {
+                ui.label(RichText::new(format!("rjot {} is available", r.version)).small().color(theme::MUTED()));
+                let label = if update::current_bundle().is_some() { "Install & restart" } else { "Download" };
+                let install = egui::Button::new(RichText::new(label).small().color(theme::ACCENT())).frame(false);
+                if ui.add(install).clicked() {
+                    self.install_update(ui.ctx());
+                }
+            } else if self.settings.paused {
+                ui.label(RichText::new("Capture is paused").small().color(theme::FAINT()));
             } else if self.settings.sensitive {
                 ui.label(RichText::new("Sensitive mode: hold ⌥ to peek").small().color(theme::FAINT()));
             } else if self.trusted {
@@ -874,6 +1413,11 @@ impl eframe::App for App {
         }
         let now = ctx.input(|i| i.time);
         self.handle_signals(ctx, now);
+        if let Some(e) = self.exporter.take_error() {
+            self.notify(e, None);
+        }
+        self.menu_events(ctx);
+        self.sync_menu();
 
         if !self.trusted && now - self.trust_checked > 1.5 {
             self.trust_checked = now;
@@ -885,12 +1429,16 @@ impl eframe::App for App {
         // Time labels age.
         ctx.request_repaint_after(std::time::Duration::from_secs(30));
 
-        if ctx.input(|i| i.viewport().close_requested()) {
-            // Closing hides; double-tap Shift keeps working. ⌘Q quits.
+        if ctx.input(|i| i.viewport().close_requested()) && !self.quitting {
+            // Closing hides; double-tap Shift keeps working. ⌘Q and the
+            // menu bar's Quit quit.
             ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+            self.picker = None;
             macos::hide();
         }
-        self.shortcuts(ctx);
+        if self.picker.is_none() {
+            self.shortcuts(ctx);
+        }
 
         if self.scratch_edited.is_some_and(|t| now - t > 0.6) {
             self.flush_scratch();
@@ -914,6 +1462,7 @@ impl eframe::App for App {
         egui::CentralPanel::default()
             .frame(Frame::new().fill(theme::BG()).inner_margin(Margin { left: 12, right: 12, top: 6, bottom: 0 }))
             .show(ctx, |ui| match self.tab.kind() {
+                _ if self.picker.is_some() => self.picker(ui),
                 Some(kind) => {
                     if !self.trusted && kind == Kind::Note {
                         self.access_banner(ui);
@@ -944,6 +1493,7 @@ impl eframe::App for App {
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         self.flush_scratch();
+        self.export_now();
     }
 }
 
@@ -1119,6 +1669,26 @@ fn item_text(ui: &Ui, item: &Item, expanded: bool) -> Arc<egui::Galley> {
         job.wrap.max_rows = COLLAPSED_ROWS;
     }
     ui.painter().layout_job(job)
+}
+
+/// The page a capture came from: its title (or host), opening the URL.
+fn link_line(ui: &mut Ui, url: &str, title: Option<&str>) {
+    let shown = title.filter(|t| !t.trim().is_empty()).map(str::to_string).unwrap_or_else(|| {
+        url.split("://").nth(1).unwrap_or(url).split('/').next().unwrap_or(url).to_string()
+    });
+    ui.horizontal(|ui| {
+        ui.spacing_mut().item_spacing.x = 4.0;
+        let (r, _) = ui.allocate_exact_size(vec2(11.0, 11.0), Sense::hover());
+        icons::paint(ui, Svg::Link, r, theme::ACCENT());
+        let mut job = LayoutJob::single_section(shown, TextFormat::simple(FontId::proportional(12.0), theme::ACCENT()));
+        job.wrap.max_width = ui.available_width();
+        job.wrap.max_rows = 1;
+        let galley = ui.painter().layout_job(job);
+        let r = ui.add(egui::Label::new(galley).sense(Sense::click())).on_hover_text(url).on_hover_cursor(egui::CursorIcon::PointingHand);
+        if r.clicked() {
+            macos::open_url(url);
+        }
+    });
 }
 
 fn empty_state(ui: &mut Ui, title: &str, hint: Option<&str>) {

@@ -1,8 +1,10 @@
 mod app;
 mod capture;
 mod doubletap;
+mod exporter;
 mod icons;
 mod macos;
+mod statusbar;
 mod theme;
 
 fn main() -> eframe::Result {

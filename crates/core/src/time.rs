@@ -37,6 +37,13 @@ pub fn label(then: i64, now: i64, offset: i64) -> String {
     if civil(day(now)).0 == y { format!("{month} {d}") } else { format!("{month} {d}, {y}") }
 }
 
+/// UTC date and time as `2026-10-16T12:00:00Z`.
+pub fn iso(t: i64) -> String {
+    let (y, m, d) = civil(t.div_euclid(86_400));
+    let s = t.rem_euclid(86_400);
+    format!("{y:04}-{m:02}-{d:02}T{:02}:{:02}:{:02}Z", s / 3600, s / 60 % 60, s % 60)
+}
+
 /// Year, month (1-12) and day for a count of days since 1970-01-01
 /// (Howard Hinnant's civil_from_days).
 fn civil(z: i64) -> (i64, u32, u32) {
@@ -64,6 +71,13 @@ mod tests {
         assert_eq!(civil(0), (1970, 1, 1));
         assert_eq!(civil(NOW / 86_400), (2026, 10, 16));
         assert_eq!(civil(-1), (1969, 12, 31));
+    }
+
+    #[test]
+    fn iso_times() {
+        assert_eq!(iso(NOW), "2026-10-16T12:00:00Z");
+        assert_eq!(iso(0), "1970-01-01T00:00:00Z");
+        assert_eq!(iso(NOW + 3661), "2026-10-16T13:01:01Z");
     }
 
     #[test]

@@ -19,7 +19,7 @@
 
 Select text in any app and double-tap **⇧ Shift**. The selection is saved as a note, along with the name of the app it came from, and a short sound confirms it. You stay where you were. If nothing is selected, the same gesture brings rjot forward with the note box focused. Type a note and press ⌘↩, and rjot gets out of the way again.
 
-It also has a **Queue** for prompts you want to use later (copying one checks it off) and a **Scratch** pad. Everything is kept in one local file at `~/Library/Application Support/dev.rjot.rjot/notes.json`. There is no sync, no account and no network access.
+It also has a **Queue** for prompts you want to use later (copying one checks it off) and a **Scratch** pad. Everything is kept in one local file at `~/Library/Application Support/dev.rjot.rjot/notes.json`. There's no sync, no account and no analytics. The only network request is **Check for updates…**, and only when you click it.
 
 Built like [rgrip](https://github.com/yoouTaro/rgrip): Rust, egui, and one small binary.
 
@@ -47,6 +47,16 @@ Then allow it under System Settings → Privacy & Security → Accessibility.
     <td><img src="docs/screenshots/sage.png" alt="Sage, dark"><br><sub>Sage, dark</sub></td>
   </tr>
 </table>
+
+## More than capture
+
+- **Menu bar icon:** your last five captures (click one to copy it), Quick note, Open rjot, Pause capture, Launch at login (macOS 13+) and Quit.
+- **⌥⇧V paste picker:** from any app, ⌥⇧V opens your queued prompts. Type to filter, ↑↓ to choose, ↩ to paste it into the app you were in. Your clipboard is put back afterwards, and the prompt is checked off.
+- **Page links:** a selection saved from Safari, Chrome, Arc, Brave, Edge or Vivaldi keeps the page's URL and title, and the card links back to it. macOS asks once per browser whether rjot may ask it. Firefox has no AppleScript, so it only gets the app name.
+- **Markdown copy:** in settings, pick a folder (an Obsidian vault, say). rjot keeps an `rjot` folder there up to date, with `Notes/`, `Queue/`, `Archive/`, `images/` and `Scratch.md`, one file per note with front matter. It only ever deletes files it wrote.
+- **Pin and archive:** pinned cards stay at the top. Archived cards leave the list but stay one click away.
+- **Image notes:** select an image and tap ⇧ twice.
+- **Updates:** settings → **Check for updates…** downloads the next release from GitHub, verifies its SHA-256 and restarts into it.
 
 ## Themes and sensitive mode
 
@@ -84,6 +94,7 @@ macOS ties the Accessibility permission to the app's signature. `make-signing-ce
 | ⌘1 / ⌘2 / ⌘3 | Notes / Queue / Scratch |
 | ⌘N | New note |
 | ⌘F | Search |
+| ⌥⇧V | Paste a queued prompt (anywhere) |
 | ⌘⇧S | Sensitive mode on/off |
 | ⌥ (hold) | Peek at hidden text |
 | ⌘W, close button | Hide (capture keeps working) |
@@ -95,6 +106,7 @@ Double-click a card to edit it, and click a long card to expand it. Hover a card
 
 - Apple silicon and macOS only, and not notarized (see Install).
 - In some editors (VS Code, for example), ⌘C with nothing selected copies the whole line, so double-tapping ⇧ there saves that line.
+- Point only one Mac's rjot at a given Markdown folder. Two copies writing the same folder would remove each other's files.
 - macOS 14 and later may decline to bring rjot forward from the background. If the quick note box doesn't appear, click the Dock icon.
 
 ## License

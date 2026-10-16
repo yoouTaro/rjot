@@ -30,6 +30,7 @@ cat > "$app/Contents/Info.plist" <<PLIST
   <key>CFBundleVersion</key><string>$version</string>
   <key>LSMinimumSystemVersion</key><string>11.0</string>
   <key>NSHighResolutionCapable</key><true/>
+  <key>NSAppleEventsUsageDescription</key><string>rjot asks your browser for the page you're on, so a saved selection links back to it.</string>
   <key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
 </dict>
 </plist>

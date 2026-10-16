@@ -29,7 +29,11 @@ Runs in the background on a Mac next to AI chats, editors and browsers. Closing 
 - Color labels (red, orange, yellow, green, blue, purple) with a filter by color.
 - Six themes (Copper, Graphite, Sage, Ocean, Plum, Mono), each in dark and light; appearance can follow the system or be set to light or dark.
 - Sensitive mode (⌘⇧S): blurs note and scratch text, ⌥ to peek, and keeps the window out of screenshots and screen sharing.
-- Data: one JSON file at `~/Library/Application Support/dev.rjot.rjot/notes.json`. No account, sync, analytics or network access.
+- Data: one JSON file at `~/Library/Application Support/dev.rjot.rjot/notes.json`, images in `images/` beside it, and an optional Markdown copy in a folder the user picks. No account, sync or analytics. The only network request is "Check for updates…" (GitHub), and only when the user clicks it.
+- Menu bar icon: recent captures (click to copy), Quick note, Open, Pause capture, Launch at login (macOS 13+), Quit.
+- ⌥⇧V paste picker: a filterable list of queued prompts; the chosen one is pasted into the app that was in front and checked off.
+- Browser captures (Safari, Chrome, Arc, Brave, Edge, Vivaldi) also keep the page URL and title (macOS asks once per browser). Firefox has no AppleScript, so it gets the app name only.
+- Pin (top of the list) and archive (out of the list, kept). Image notes: select an image and tap Shift twice.
 - macOS 11+, Apple silicon only for now. Release v0.0.1-alpha, zip of about 3.4 MB.
 - Known limits: editors that copy the whole line on ⌘C with nothing selected (VS Code) save that line; macOS 14+ may not let rjot bring itself to the front.
 
@@ -46,6 +50,6 @@ Real app captures from scripted demo scenes (`scripts/screenshots.sh`): `docs/sc
 ## Product Principles
 
 1. The gesture is the product: one move, no context switch.
-2. Local and honest: nothing leaves the Mac, and the site says only what's true.
+2. Local and honest: nothing leaves the Mac unless the user asks (the update check), and the site says only what's true.
 3. Small over feature lists.
 4. Plain words; the real app shows what it does.

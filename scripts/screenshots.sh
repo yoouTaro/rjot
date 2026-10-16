@@ -18,7 +18,7 @@ ago() { echo $((now - $1)); }
 notes() {
   cat <<JSON
 {"settings": $1,
- "next_id": 12,
+ "next_id": 13,
  "items": [
   {"id":1,"kind":"prompt","text":"Rewrite the onboarding email so it's half as long and keeps the pricing link.","created":$(ago 90000),"done":true,"color":"purple"},
   {"id":2,"kind":"note","text":"CREATE INDEX CONCURRENTLY can't run inside a transaction block, so a migration that uses it has to turn off the wrapping transaction.","source":"Claude","created":$(ago 26000),"color":"blue"},
@@ -27,9 +27,11 @@ notes() {
   {"id":5,"kind":"prompt","text":"Review this diff for race conditions between the event tap thread and the UI.","created":$(ago 4100)},
   {"id":6,"kind":"note","text":"brew install --cask rjot  # someday","source":"Terminal","created":$(ago 3000),"color":"green"},
   {"id":7,"kind":"prompt","text":"Summarize the thread below as three bullet points for a status update.","created":$(ago 1900),"color":"orange"},
-  {"id":8,"kind":"note","text":"The Accessibility API returns the focused element's AXSelectedText; browsers often leave it empty, so fall back to a copy and restore the clipboard.","source":"Notes","created":$(ago 1300),"color":"orange"},
+  {"id":8,"kind":"note","text":"The Accessibility API returns the focused element's AXSelectedText; browsers often leave it empty, so fall back to a copy and restore the clipboard.","source":"Safari","url":"https://developer.apple.com/documentation/applicationservices/axuielement_h","title":"AXUIElement.h | Apple Developer Documentation","created":$(ago 1300),"color":"orange","pinned":true},
   {"id":9,"kind":"note","text":"Meeting moved to Thursday 10:30, same room.","source":"Messages","created":$(ago 420)},
-  {"id":10,"kind":"note","text":"Capture now, sort later.","source":"Claude","created":$(ago 25),"color":"purple"}
+  {"id":10,"kind":"note","text":"Capture now, sort later.","source":"Claude","url":"https://claude.ai/chat/3f2a","title":"Designing a capture app","created":$(ago 25),"color":"purple"},
+  {"id":11,"kind":"note","text":"","source":"Preview","image":"11.png","created":$(ago 15)},
+  {"id":12,"kind":"note","text":"Old idea: sync over iCloud. Dropped, rjot stays local.","source":"Notes","created":$(ago 400000),"archived":true}
  ],
  "scratch": "rjot 0.0.1\\n- double-tap shift capture\\n- queue + scratch\\n- color labels\\n- themes, sensitive mode\\n\\nnext: menu bar icon?"}
 JSON
@@ -42,6 +44,9 @@ scene() { # name, settings, then env assignments
   [ "$only" = "  " ] || case "$only" in *" $name "*) ;; *) return 0 ;; esac
   data="target/demo/$name.json"
   notes "$settings" > "$data"
+  # The image note: a real capture of the app's own colorways row.
+  mkdir -p target/demo/images
+  [ -f target/demo/images/11.png ] || magick docs/screenshots/settings.png -crop 520x300+340+90 -resize 520x target/demo/images/11.png
   ready=$(mktemp -u)
   env RJOT_DATA="$data" RJOT_DEMO_TRUSTED=1 RJOT_DEMO_READY="$ready" "$@" target/debug/rjot >/dev/null 2>&1 &
   pid=$!
@@ -77,6 +82,7 @@ scene light '{"theme":"Graphite","appearance":"light","sensitive":false,"sound":
 scene sage '{"theme":"Sage","appearance":"dark","sensitive":false,"sound":true}' RJOT_DEMO_TAB=queue
 scene sensitive '{"theme":"Copper","appearance":"dark","sensitive":true,"sound":true}' RJOT_DEMO_CAPTURABLE=1
 scene scratch "$dark" RJOT_DEMO_TAB=scratch
+scene picker "$dark" RJOT_DEMO_PICKER=1
 
 # Light Copper scenes for the website (site/img, needs cwebp).
 light='{"theme":"Copper","appearance":"light","sensitive":false,"sound":true}'

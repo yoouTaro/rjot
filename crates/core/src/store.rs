@@ -2,6 +2,7 @@
 //! atomically (temp file + rename) after every change.
 
 use serde::{Deserialize, Serialize};
+use std::cell::Cell;
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -55,6 +56,29 @@ pub struct Item {
     pub done: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub color: Option<Color>,
+    /// The page a browser capture came from.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    /// File name of a captured image, in [`Store::images_dir`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub image: Option<String>,
+    /// Kept at the top of its list.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub pinned: bool,
+    /// Out of the way: hidden from the list until archived items are shown.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub archived: bool,
+}
+
+/// Where a capture came from, beyond its text.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Meta {
+    pub source: Option<String>,
+    pub url: Option<String>,
+    pub title: Option<String>,
+    pub image: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -77,11 +101,23 @@ pub struct Settings {
     pub sensitive: bool,
     /// Play a sound when a selection is saved.
     pub sound: bool,
+    /// Ignore double-tap Shift until switched back on.
+    pub paused: bool,
+    /// Keep a Markdown copy of everything in an `rjot` folder here.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub export_dir: Option<PathBuf>,
 }
 
 impl Default for Settings {
     fn default() -> Settings {
-        Settings { theme: "Copper".into(), appearance: Appearance::System, sensitive: false, sound: true }
+        Settings {
+            theme: "Copper".into(),
+            appearance: Appearance::System,
+            sensitive: false,
+            sound: true,
+            paused: false,
+            export_dir: None,
+        }
     }
 }
 
@@ -101,6 +137,8 @@ struct Data {
 pub struct Store {
     path: PathBuf,
     data: Data,
+    /// Bumped by every save, so views can tell when to refresh.
+    revision: Cell<u64>,
 }
 
 impl Store {
@@ -128,21 +166,50 @@ impl Store {
             Err(e) if e.kind() == io::ErrorKind::NotFound => Data::default(),
             Err(e) => return Err(format!("{}: {e}", path.display())),
         };
-        let mut store = Store { path, data };
+        let mut store = Store { path, data, revision: Cell::new(0) };
         let max = store.data.items.iter().map(|i| i.id).max().unwrap_or(0);
         store.data.next_id = store.data.next_id.max(max + 1);
+        store.prune_images();
         Ok(store)
+    }
+
+    /// Delete image files no item refers to (left by deletes that were
+    /// never undone).
+    /// Only files named like rjot's own (`<id>.png`) are ever touched.
+    fn prune_images(&self) {
+        if self.path.parent().is_none_or(|p| p.as_os_str().is_empty()) {
+            return;
+        }
+        let Ok(entries) = std::fs::read_dir(self.images_dir()) else { return };
+        for entry in entries.flatten() {
+            let name = entry.file_name().to_string_lossy().to_string();
+            let ours = name.strip_suffix(".png").is_some_and(|stem| !stem.is_empty() && stem.bytes().all(|b| b.is_ascii_digit()));
+            if ours && !self.data.items.iter().any(|i| i.image.as_deref() == Some(name.as_str())) {
+                let _ = std::fs::remove_file(entry.path());
+            }
+        }
     }
 
     /// An empty store at `path`, used when the file couldn't be opened.
     pub fn empty(path: impl Into<PathBuf>) -> Store {
-        Store { path: path.into(), data: Data { next_id: 1, ..Data::default() } }
+        Store { path: path.into(), data: Data { next_id: 1, ..Data::default() }, revision: Cell::new(0) }
     }
 
     pub fn path(&self) -> &Path {
         &self.path
     }
 
+    /// Captured images live next to the note file.
+    pub fn images_dir(&self) -> PathBuf {
+        self.path.parent().map(|d| d.join("images")).unwrap_or_else(|| PathBuf::from("images"))
+    }
+
+    pub fn revision(&self) -> u64 {
+        self.revision.get()
+    }
+
+    /// Write the note file. The Markdown copy is written separately, off
+    /// the store lock (see [`Store::export_job`]).
     pub fn save(&self) -> io::Result<()> {
         if let Some(dir) = self.path.parent() {
             std::fs::create_dir_all(dir)?;
@@ -150,7 +217,20 @@ impl Store {
         let tmp = self.path.with_extension("json.tmp");
         let bytes = serde_json::to_vec_pretty(&self.data).map_err(io::Error::other)?;
         std::fs::write(&tmp, bytes)?;
-        std::fs::rename(&tmp, &self.path)
+        std::fs::rename(&tmp, &self.path)?;
+        self.revision.set(self.revision.get() + 1);
+        Ok(())
+    }
+
+    /// Everything the Markdown copy needs, when one is set up.
+    pub fn export_job(&self) -> Option<crate::export::Job> {
+        let dir = self.data.settings.export_dir.clone()?;
+        Some(crate::export::Job {
+            dir,
+            items: self.data.items.clone(),
+            scratch: self.data.scratch.clone(),
+            images: self.images_dir(),
+        })
     }
 
     /// Items of `kind`, newest first.
@@ -158,8 +238,13 @@ impl Store {
         self.data.items.iter().rev().filter(move |i| i.kind == kind)
     }
 
+    /// Open items of `kind` (not done, not archived).
     pub fn count(&self, kind: Kind) -> usize {
-        self.data.items.iter().filter(|i| i.kind == kind && !i.done).count()
+        self.data.items.iter().filter(|i| i.kind == kind && !i.done && !i.archived).count()
+    }
+
+    pub fn count_archived(&self, kind: Kind) -> usize {
+        self.data.items.iter().filter(|i| i.kind == kind && i.archived).count()
     }
 
     pub fn get(&self, id: u64) -> Option<&Item> {
@@ -169,12 +254,19 @@ impl Store {
     /// Add an item and return its id. Blank text is ignored. Saving the same
     /// note twice in a row within a few seconds (a double trigger) keeps one.
     pub fn add(&mut self, kind: Kind, text: &str, source: Option<String>, now: i64) -> Option<u64> {
+        self.add_with(kind, text, Meta { source, ..Meta::default() }, now)
+    }
+
+    /// [`Store::add`] with the page and image a capture came with. An item
+    /// with an image may have no text.
+    pub fn add_with(&mut self, kind: Kind, text: &str, meta: Meta, now: i64) -> Option<u64> {
         let text = text.trim_matches(|c: char| c == '\n' || c == '\r');
-        if text.trim().is_empty() {
+        if text.trim().is_empty() && meta.image.is_none() {
             return None;
         }
         if let Some(last) = self.data.items.last()
             && last.kind == kind
+            && meta.image.is_none()
             && last.text == text
             && now - last.created < 5
         {
@@ -182,8 +274,27 @@ impl Store {
         }
         let id = self.data.next_id.max(1);
         self.data.next_id = id + 1;
-        self.data.items.push(Item { id, kind, text: text.to_string(), source, created: now, done: false, color: None });
+        self.data.items.push(Item {
+            id,
+            kind,
+            text: text.to_string(),
+            source: meta.source,
+            created: now,
+            done: false,
+            color: None,
+            url: meta.url,
+            title: meta.title,
+            image: meta.image,
+            pinned: false,
+            archived: false,
+        });
         Some(id)
+    }
+
+    /// The next id [`Store::add_with`] will hand out, for naming an image
+    /// file before the item exists.
+    pub fn peek_id(&self) -> u64 {
+        self.data.next_id.max(1)
     }
 
     /// Remove an item, returning it and its position so it can be restored.
@@ -217,6 +328,22 @@ impl Store {
     pub fn set_color(&mut self, id: u64, color: Option<Color>) {
         if let Some(i) = self.get_mut(id) {
             i.color = color;
+        }
+    }
+
+    pub fn set_pinned(&mut self, id: u64, pinned: bool) {
+        if let Some(i) = self.get_mut(id) {
+            i.pinned = pinned;
+        }
+    }
+
+    /// Archiving also unpins; unarchiving puts it back in the list.
+    pub fn set_archived(&mut self, id: u64, archived: bool) {
+        if let Some(i) = self.get_mut(id) {
+            i.archived = archived;
+            if archived {
+                i.pinned = false;
+            }
         }
     }
 
@@ -260,7 +387,14 @@ impl Store {
 /// Case-insensitive match of every whitespace-separated word in `query`
 /// against the item's text and source.
 pub fn matches(item: &Item, query: &str) -> bool {
-    let hay = format!("{} {}", item.text, item.source.as_deref().unwrap_or("")).to_lowercase();
+    let hay = format!(
+        "{} {} {} {}",
+        item.text,
+        item.source.as_deref().unwrap_or(""),
+        item.title.as_deref().unwrap_or(""),
+        item.url.as_deref().unwrap_or("")
+    )
+    .to_lowercase();
     query.split_whitespace().all(|w| hay.contains(&w.to_lowercase()))
 }
 
@@ -307,6 +441,56 @@ mod tests {
         assert_eq!(s.settings().theme, "Sage");
         assert!(s.settings().sound);
         assert_eq!(s.settings().appearance, Appearance::System);
+    }
+
+    #[test]
+    fn pin_archive_and_meta() {
+        let path = temp_path("meta");
+        let mut s = Store::open(&path).unwrap();
+        let meta = Meta { source: Some("Safari".into()), url: Some("https://example.com".into()), title: Some("Example".into()), image: None };
+        let a = s.add_with(Kind::Note, "hello", meta, 1).unwrap();
+        let b = s.add_with(Kind::Note, "", Meta { image: Some("2.png".into()), ..Meta::default() }, 2).unwrap();
+        assert_eq!(s.add_with(Kind::Note, " ", Meta::default(), 3), None);
+        s.set_pinned(a, true);
+        s.set_archived(b, true);
+        assert_eq!(s.count(Kind::Note), 1);
+        assert_eq!(s.count_archived(Kind::Note), 1);
+        s.set_archived(a, true);
+        assert!(!s.get(a).unwrap().pinned, "archiving unpins");
+        s.save().unwrap();
+        let s = Store::open(&path).unwrap();
+        assert_eq!(s.get(a).unwrap().url.as_deref(), Some("https://example.com"));
+        assert_eq!(s.get(b).unwrap().image.as_deref(), Some("2.png"));
+        assert!(s.get(b).unwrap().archived);
+    }
+
+    #[test]
+    fn save_writes_the_markdown_copy() {
+        let path = temp_path("md");
+        let out = path.parent().unwrap().join("vault");
+        let mut s = Store::open(&path).unwrap();
+        s.settings_mut().export_dir = Some(out.clone());
+        let id = s.add(Kind::Note, "exported note", None, 0).unwrap();
+        s.export_job().unwrap().run().unwrap();
+        let file = crate::export::root(&out).join(format!("Notes/exported note ({id}).md"));
+        assert!(std::fs::read_to_string(file).unwrap().contains("exported note"));
+    }
+
+    #[test]
+    fn orphan_images_are_pruned() {
+        let path = temp_path("prune");
+        let mut s = Store::open(&path).unwrap();
+        let id = s.peek_id();
+        std::fs::create_dir_all(s.images_dir()).unwrap();
+        std::fs::write(s.images_dir().join(format!("{id}.png")), b"png").unwrap();
+        std::fs::write(s.images_dir().join("99.png"), b"png").unwrap();
+        std::fs::write(s.images_dir().join("holiday.png"), b"png").unwrap();
+        s.add_with(Kind::Note, "", Meta { image: Some(format!("{id}.png")), ..Meta::default() }, 0);
+        s.save().unwrap();
+        let s = Store::open(&path).unwrap();
+        assert!(s.images_dir().join(format!("{id}.png")).exists());
+        assert!(!s.images_dir().join("99.png").exists());
+        assert!(s.images_dir().join("holiday.png").exists(), "only rjot's own names are pruned");
     }
 
     #[test]
@@ -359,9 +543,23 @@ mod tests {
 
     #[test]
     fn search() {
-        let item = Item { id: 1, kind: Kind::Note, text: "Rust borrow checker".into(), source: Some("Claude".into()), created: 0, done: false, color: None };
+        let item = Item {
+            id: 1,
+            kind: Kind::Note,
+            text: "Rust borrow checker".into(),
+            source: Some("Claude".into()),
+            created: 0,
+            done: false,
+            color: None,
+            url: Some("https://claude.ai/chat/abc".into()),
+            title: Some("Lifetimes".into()),
+            image: None,
+            pinned: false,
+            archived: false,
+        };
         assert!(matches(&item, "borrow claude"));
         assert!(matches(&item, ""));
         assert!(!matches(&item, "python"));
+        assert!(matches(&item, "lifetimes claude.ai"));
     }
 }
