@@ -14,7 +14,7 @@ Built like [rgrip](https://github.com/yoouTaro/rgrip): Rust, egui, and one small
 
 The settings menu (sliders icon) has six themes, each with a dark and a light palette: Copper, Graphite, Sage, Ocean, Plum and Mono. Appearance can follow macOS or stay light or dark.
 
-**Sensitive mode** (⌘⇧S) shows note and scratchpad text as dots. Hold ⌥ to peek. It also keeps the rjot window out of screenshots, recordings and screen sharing. Whatever the mode, if a password manager marks a copy as concealed, rjot doesn't save it.
+**Sensitive mode** (⌘⇧S) blurs note and scratchpad text. Hold ⌥ to peek, or click into the scratchpad to edit it. It also keeps the rjot window out of screenshots, recordings and screen sharing. Whatever the mode, if a password manager marks a copy as concealed, rjot doesn't save it.
 
 ## How capture works
 

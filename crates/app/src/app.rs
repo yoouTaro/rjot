@@ -158,9 +158,11 @@ impl App {
         self.change(|s| *s.settings_mut() = settings);
     }
 
-    /// Note text is hidden: sensitive mode on and ⌥ not held.
-    fn hiding(&self, ui: &Ui) -> bool {
-        self.settings.sensitive && !ui.input(|i| i.modifiers.alt)
+    /// How blurred note text is, 0 (clear) to 1: sensitive mode on and ⌥
+    /// not held. Animates, so peeking eases the text into focus.
+    fn blur(&self, ui: &Ui) -> f32 {
+        let hidden = self.settings.sensitive && !ui.input(|i| i.modifiers.alt);
+        ui.ctx().animate_bool_with_time(Id::new("blur"), hidden, 0.18)
     }
 
     fn flush_scratch(&mut self) {
@@ -318,7 +320,7 @@ impl App {
                 ui.add_space(4.0);
                 ui.separator();
                 let mut sensitive = self.settings.sensitive;
-                if switch_row(ui, &mut sensitive, "Sensitive mode", "Hides note text (hold ⌥ to peek) and keeps rjot out of screenshots and screen sharing.  ⌘⇧S").changed() {
+                if switch_row(ui, &mut sensitive, "Sensitive mode", "Blurs note text (hold ⌥ to peek) and keeps rjot out of screenshots and screen sharing.  ⌘⇧S").changed() {
                     self.set_settings(ui.ctx(), |s| s.sensitive = sensitive);
                 }
                 let mut sound = self.settings.sound;
@@ -542,10 +544,16 @@ impl App {
                         actions.push(Action::Toggle(item.id));
                     }
                     let expanded = self.expanded.contains(&item.id);
-                    let hidden = self.hiding(ui);
-                    let galley = item_text(ui, item, expanded, hidden);
+                    let blur = self.blur(ui);
+                    let galley = item_text(ui, item, expanded);
                     let truncated = galley.elided;
-                    let r = ui.add(egui::Label::new(galley).sense(Sense::click()));
+                    let r = if blur > 0.0 {
+                        let (rect, r) = ui.allocate_exact_size(galley.size(), Sense::click());
+                        paint_blurred(ui, rect.min, galley, theme::TEXT(), blur);
+                        r
+                    } else {
+                        ui.add(egui::Label::new(galley).sense(Sense::click()))
+                    };
                     if r.double_clicked() {
                         actions.push(Action::Edit(item.id));
                     } else if r.clicked() && (truncated || expanded) {
@@ -736,7 +744,9 @@ impl App {
     // ---- Scratch ----
 
     fn scratch(&mut self, ui: &mut Ui, now: f64) {
-        let hidden = self.hiding(ui);
+        let blur = self.blur(ui);
+        let id = Id::new("scratch");
+        let editing = ui.memory(|m| m.has_focus(id));
         Frame::new()
             .fill(theme::INPUT())
             .stroke(Stroke::new(1.0_f32, theme::BORDER()))
@@ -744,14 +754,27 @@ impl App {
             .inner_margin(Margin::same(12))
             .show(ui, |ui| {
                 egui::ScrollArea::vertical().auto_shrink(false).show(ui, |ui| {
+                    // Blurred until clicked into (or peeked at with ⌥).
+                    if blur > 0.0 && !editing && !self.scratch.is_empty() {
+                        let font = TextStyle::Body.resolve(ui.style());
+                        let job = LayoutJob::simple(self.scratch.clone(), font, theme::TEXT(), ui.available_width());
+                        let galley = ui.painter().layout_job(job);
+                        let size = vec2(ui.available_width(), galley.size().y.max(ui.available_height()));
+                        let (rect, r) = ui.allocate_exact_size(size, Sense::click());
+                        paint_blurred(ui, rect.min, galley, theme::TEXT(), blur);
+                        if r.on_hover_cursor(egui::CursorIcon::Text).clicked() {
+                            ui.memory_mut(|m| m.request_focus(id));
+                        }
+                        return;
+                    }
                     let rows = (ui.available_height() / 18.0).max(4.0) as usize;
                     let edit = egui::TextEdit::multiline(&mut self.scratch)
+                        .id(id)
                         .frame(false)
                         .hint_text("Scratchpad. Anything goes; it's saved as you type.")
                         .margin(Margin::ZERO)
                         .desired_width(f32::INFINITY)
-                        .desired_rows(rows)
-                        .password(hidden);
+                        .desired_rows(rows);
                     if ui.add(edit).changed() {
                         self.scratch_edited = Some(now);
                     }
@@ -886,10 +909,25 @@ fn segment(ui: &mut Ui, label: &str, count: Option<usize>, selected: bool) -> Re
     r
 }
 
-/// Every visible character as a bullet, keeping line breaks and spaces so
-/// the card keeps its shape.
-fn redact(text: &str) -> String {
-    text.chars().map(|c| if c.is_whitespace() { c } else { '•' }).collect()
+/// Draw `galley` as if out of focus: many faint copies spread over rings
+/// around its position. `amount` (0-1) scales the spread, so at 0 it's
+/// plain text.
+fn paint_blurred(ui: &Ui, pos: egui::Pos2, galley: Arc<egui::Galley>, color: egui::Color32, amount: f32) {
+    /// Radius and sample count per ring.
+    const RINGS: [(f32, usize); 3] = [(2.0, 8), (4.0, 12), (6.5, 16)];
+    // Faint enough that the overlapping copies add up to soft, unreadable ink.
+    let ink = color.gamma_multiply(egui::lerp(1.0..=0.075, amount));
+    let painter = ui.painter();
+    painter.galley_with_override_text_color(pos, galley.clone(), ink);
+    for (ring, (radius, count)) in RINGS.into_iter().enumerate() {
+        // Stagger the rings so their samples don't line up.
+        let phase = ring as f32 * 0.5;
+        for k in 0..count {
+            let a = std::f32::consts::TAU * (k as f32 + phase) / count as f32;
+            let offset = vec2(a.cos(), a.sin()) * radius * amount;
+            painter.galley_with_override_text_color(pos + offset, galley.clone(), ink);
+        }
+    }
 }
 
 fn section_label(ui: &mut Ui, text: &str) {
@@ -1008,16 +1046,14 @@ fn check_box(ui: &mut Ui, done: bool) -> Response {
 
 /// The item's text, cut to a few lines unless expanded; checked-off prompts
 /// are struck through.
-fn item_text(ui: &Ui, item: &Item, expanded: bool, hidden: bool) -> Arc<egui::Galley> {
+fn item_text(ui: &Ui, item: &Item, expanded: bool) -> Arc<egui::Galley> {
     let font = TextStyle::Body.resolve(ui.style());
     let mut format = TextFormat { font_id: font, color: theme::TEXT(), line_height: Some(19.0), ..Default::default() };
     if item.done {
         format.color = theme::FAINT();
         format.strikethrough = Stroke::new(1.0_f32, theme::FAINT());
     }
-    let text = item.text.trim_end();
-    let text = if hidden { redact(text) } else { text.to_string() };
-    let mut job = LayoutJob::single_section(text, format);
+    let mut job = LayoutJob::single_section(item.text.trim_end().to_string(), format);
     job.wrap.max_width = ui.available_width();
     if !expanded {
         job.wrap.max_rows = COLLAPSED_ROWS;
