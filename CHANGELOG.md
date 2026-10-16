@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.0.2-alpha — 2026-10-16
 
 - **Menu bar icon:** the last five captures (click to copy), Quick note, Open rjot, Pause capture, Launch at login (macOS 13+) and Quit.
 - **⌥⇧V paste picker:** a list of queued prompts, filtered as you type. ↩ pastes the chosen one into the app you were in (your clipboard is put back) and checks it off.

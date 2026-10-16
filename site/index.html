@@ -42,10 +42,10 @@
           <h1>Tap Shift twice.</h1>
           <p class="lead">Select text in any app and tap <span class="kbd" aria-label="Shift"><svg><use href="#i-shift"/></svg></span> twice. rjot keeps it as a note, along with the app it came from, and you never leave the app you were in.</p>
           <div class="actions">
-            <a class="key key-accent key-wide" href="https://github.com/yoouTaro/rjot/releases/download/v0.0.1-alpha/rjot-0.0.1-alpha-macos-arm64.zip"><span class="cap"><span>Download for Mac</span><svg class="legend-icon"><use href="#i-return"/></svg></span></a>
+            <a class="key key-accent key-wide" href="https://github.com/yoouTaro/rjot/releases/download/v0.0.2-alpha/rjot-0.0.2-alpha-macos-arm64.zip"><span class="cap"><span>Download for Mac</span><svg class="legend-icon"><use href="#i-return"/></svg></span></a>
             <a class="key key-mod" href="https://github.com/yoouTaro/rjot"><span class="cap">View source</span></a>
           </div>
-          <p class="facts">v0.0.1-alpha &middot; macOS 11+, Apple silicon &middot; 3.4 MB &middot; MIT</p>
+          <p class="facts">v0.0.2-alpha &middot; macOS 11+, Apple silicon &middot; 4.9 MB &middot; MIT</p>
         </div>
 
         <div class="window" aria-label="A working copy of rjot's Notes list">
@@ -97,7 +97,7 @@
             <div class="entry-body">
               <h3>Base kit: Notes</h3>
               <p class="contents">6 caps</p>
-              <p>Every selection you keep lands here, newest first, with the app it came from and when. Nothing selected? The same gesture opens a quick note.</p>
+              <p>Every selection you keep lands here, newest first, with the app it came from, and the page when it came from a browser. Select an image and it's kept too. Pin what you need at the top and archive the rest.</p>
               <div class="tray">
                 <div class="combo"><span class="key"><span class="cap"><svg><use href="#i-shift"/></svg></span></span><span class="key"><span class="cap"><svg><use href="#i-shift"/></svg></span></span><small>Save the selection</small></div>
                 <div class="combo"><span class="key"><span class="cap"><svg><use href="#i-cmd"/></svg></span></span><span class="key"><span class="cap"><svg><use href="#i-return"/></svg></span></span><small>Save a typed note</small></div>
@@ -110,9 +110,10 @@
             <figure class="shot"><img src="img/queue.webp" width="440" height="660" loading="lazy" alt="The Queue: prompts saved for later, one checked off"></figure>
             <div class="entry-body">
               <h3>Queue kit</h3>
-              <p class="contents">4 caps</p>
-              <p>Write prompts before you need them. Copy one into ChatGPT, Claude or Cursor and it's checked off.</p>
+              <p class="contents">7 caps</p>
+              <p>Write prompts before you need them. In ChatGPT, Claude or Cursor, press Option-Shift-V, pick one, and it's pasted in and checked off.</p>
               <div class="tray">
+                <div class="combo"><span class="key"><span class="cap"><svg><use href="#i-opt"/></svg></span></span><span class="key"><span class="cap"><svg><use href="#i-shift"/></svg></span></span><span class="key"><span class="cap">V</span></span><small>Paste a prompt, anywhere</small></div>
                 <div class="combo"><span class="key"><span class="cap"><svg><use href="#i-cmd"/></svg></span></span><span class="key"><span class="cap">2</span></span><small>The queue</small></div>
                 <div class="combo"><span class="key"><span class="cap"><svg><use href="#i-cmd"/></svg></span></span><span class="key"><span class="cap">3</span></span><small>Scratch pad</small></div>
               </div>
@@ -179,10 +180,12 @@
           <div><dt>Gesture</dt><dd>Two taps of Shift alone, under <span class="num">350&nbsp;ms</span> apart</dd></div>
           <div><dt>Reads</dt><dd>The focused app's selected text through Accessibility; otherwise <span class="kbd kbd-dark" aria-label="Command"><svg><use href="#i-cmd"/></svg></span><span class="kbd kbd-dark">C</span>, with your clipboard put back exactly</dd></div>
           <div><dt>Keeps</dt><dd>One JSON file, <code>~/Library/<wbr>Application Support/<wbr>dev.rjot.rjot/<wbr>notes.json</code></dd></div>
-          <div><dt>Sends</dt><dd>Nothing. No account, no sync, no analytics, no network</dd></div>
+          <div><dt>Sends</dt><dd>Nothing on its own. No account, no sync, no analytics; it asks GitHub for a newer version only when you click Check for updates</dd></div>
+          <div><dt>Copies</dt><dd>Optionally, every note as a Markdown file in a folder you choose, such as an Obsidian vault</dd></div>
+          <div><dt>Lives in</dt><dd>The menu bar too: recent captures, quick note, pause, launch at login</dd></div>
           <div><dt>Skips</dt><dd>Copies a password manager marks as concealed</dd></div>
           <div><dt>Runs on</dt><dd>macOS 11 or later, Apple silicon</dd></div>
-          <div><dt>Weighs</dt><dd><span class="num">3.4&nbsp;MB</span> zipped</dd></div>
+          <div><dt>Weighs</dt><dd><span class="num">4.9&nbsp;MB</span> zipped</dd></div>
           <div><dt>Built with</dt><dd>Rust and egui, one native binary</dd></div>
           <div><dt>License</dt><dd>MIT, source on GitHub</dd></div>
         </dl>
@@ -199,8 +202,8 @@
           <li><span class="key key-accent num-key" aria-hidden="true"><span class="cap">4</span></span><h3>Tap Shift twice</h3><p>Select something anywhere. A short pop means it's kept.</p></li>
         </ol>
         <div class="closing">
-          <a class="key key-accent key-enter" href="https://github.com/yoouTaro/rjot/releases/download/v0.0.1-alpha/rjot-0.0.1-alpha-macos-arm64.zip"><span class="cap"><span>Download for Mac</span><svg class="legend-icon"><use href="#i-return"/></svg></span></a>
-          <p class="closing-note">Free and open source, v0.0.1-alpha. Or <a href="https://github.com/yoouTaro/rjot#build">build it from source</a>.</p>
+          <a class="key key-accent key-enter" href="https://github.com/yoouTaro/rjot/releases/download/v0.0.2-alpha/rjot-0.0.2-alpha-macos-arm64.zip"><span class="cap"><span>Download for Mac</span><svg class="legend-icon"><use href="#i-return"/></svg></span></a>
+          <p class="closing-note">Free and open source, v0.0.2-alpha. Or <a href="https://github.com/yoouTaro/rjot#build">build it from source</a>.</p>
         </div>
       </div>
     </section>

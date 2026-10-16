@@ -34,7 +34,7 @@ Runs in the background on a Mac next to AI chats, editors and browsers. Closing 
 - ⌥⇧V paste picker: a filterable list of queued prompts; the chosen one is pasted into the app that was in front and checked off.
 - Browser captures (Safari, Chrome, Arc, Brave, Edge, Vivaldi) also keep the page URL and title (macOS asks once per browser). Firefox has no AppleScript, so it gets the app name only.
 - Pin (top of the list) and archive (out of the list, kept). Image notes: select an image and tap Shift twice.
-- macOS 11+, Apple silicon only for now. Release v0.0.1-alpha, zip of about 3.4 MB.
+- macOS 11+, Apple silicon only for now. Release v0.0.2-alpha, zip of about 4.9 MB.
 - Known limits: editors that copy the whole line on ⌘C with nothing selected (VS Code) save that line; macOS 14+ may not let rjot bring itself to the front.
 
 ## Brand Commitments
@@ -45,7 +45,7 @@ Runs in the background on a Mac next to AI chats, editors and browsers. Closing 
 
 ## Evidence on Hand
 
-Real app captures from scripted demo scenes (`scripts/screenshots.sh`): `docs/screenshots/*.png` (dark and light), `site/img/*.webp` (light Copper). Measured size: 3.4 MB zip. No users, testimonials, download counts or benchmarks exist; don't invent any.
+Real app captures from scripted demo scenes (`scripts/screenshots.sh`): `docs/screenshots/*.png` (dark and light), `site/img/*.webp` (light Copper). Measured size: 4.9 MB zip (0.0.2-alpha). No users, testimonials, download counts or benchmarks exist; don't invent any.
 
 ## Product Principles
 

@@ -2945,7 +2945,7 @@ dependencies = [
 
 [[package]]
 name = "rjot"
-version = "0.0.1-alpha"
+version = "0.0.2-alpha"
 dependencies = [
  "core-foundation 0.9.4",
  "core-graphics",
@@ -2963,7 +2963,7 @@ dependencies = [
 
 [[package]]
 name = "rjot-core"
-version = "0.0.1-alpha"
+version = "0.0.2-alpha"
 dependencies = [
  "directories",
  "reqwest",
