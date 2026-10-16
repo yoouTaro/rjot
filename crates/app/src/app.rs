@@ -777,7 +777,7 @@ impl App {
                         .color(theme::MUTED()),
                 );
                 ui.label(
-                    RichText::new("Already switched on? macOS may hold on to an older build: select rjot in the list, remove it with −, and add it again.")
+                    RichText::new("Click below and switch rjot on. If it looked switched on already, that was an older build: it's been cleared, so switch it on again.")
                         .small()
                         .color(theme::FAINT()),
                 );

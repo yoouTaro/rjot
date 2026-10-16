@@ -44,7 +44,17 @@ pub fn trusted() -> bool {
 }
 
 /// Show the system's Accessibility prompt and open the settings pane.
+///
+/// An entry left over from an earlier build (signed differently) still
+/// shows rjot as switched on but no longer applies, and switching it on
+/// again does nothing. So rjot's entry is cleared first, and the prompt
+/// then adds one for this build.
 pub fn ask_for_access() {
+    if let Some(id) = NSRunningApplication::currentApplication().bundleIdentifier() {
+        let _ = std::process::Command::new("/usr/bin/tccutil")
+            .args(["reset", "Accessibility", &id.to_string()])
+            .status();
+    }
     let key = CFString::from_static_string("AXTrustedCheckOptionPrompt");
     let options = CFDictionary::from_CFType_pairs(&[(key.as_CFType(), CFBoolean::true_value().as_CFType())]);
     unsafe { AXIsProcessTrustedWithOptions(options.as_concrete_TypeRef()) };

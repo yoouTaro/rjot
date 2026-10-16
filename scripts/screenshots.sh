@@ -49,8 +49,15 @@ scene() { # name, settings, then env assignments
   while [ ! -f "$ready" ] && [ $i -lt 300 ]; do sleep 0.1; i=$((i + 1)); done
   sleep 0.3
   if [ -f "$ready" ] && wid=$(target/winid $pid | cut -d" " -f1); then
-    screencapture -x -o -l "$wid" "$out/$name.png"
-    echo "$out/$name.png"
+    case $name in
+      site-*) # Website images: webp in site/img, named without the prefix.
+        screencapture -x -o -l "$wid" "target/demo/$name.png"
+        cwebp -quiet -q 86 "target/demo/$name.png" -o "site/img/${name#site-}.webp"
+        echo "site/img/${name#site-}.webp" ;;
+      *)
+        screencapture -x -o -l "$wid" "$out/$name.png"
+        echo "$out/$name.png" ;;
+    esac
   else
     echo "scene $name: not ready" >&2
   fi
@@ -70,3 +77,11 @@ scene light '{"theme":"Graphite","appearance":"light","sensitive":false,"sound":
 scene sage '{"theme":"Sage","appearance":"dark","sensitive":false,"sound":true}' RJOT_DEMO_TAB=queue
 scene sensitive '{"theme":"Copper","appearance":"dark","sensitive":true,"sound":true}' RJOT_DEMO_CAPTURABLE=1
 scene scratch "$dark" RJOT_DEMO_TAB=scratch
+
+# Light Copper scenes for the website (site/img, needs cwebp).
+light='{"theme":"Copper","appearance":"light","sensitive":false,"sound":true}'
+scene site-hero "$light" RJOT_DEMO_HOVER=8
+scene site-queue "$light" RJOT_DEMO_TAB=queue
+scene site-colors "$light" RJOT_DEMO_PICK=8
+scene site-settings "$light" RJOT_DEMO_SETTINGS=1
+scene site-sensitive '{"theme":"Copper","appearance":"light","sensitive":true,"sound":true}' RJOT_DEMO_CAPTURABLE=1

@@ -10,6 +10,11 @@
   <img alt="Platform: macOS" src="https://img.shields.io/badge/platform-macOS-lightgrey?logo=apple">
 </p>
 
+<p align="center">
+  <a href="https://yoouTaro.github.io/rjot/">Website</a> ·
+  <a href="https://github.com/yoouTaro/rjot/releases">Download</a>
+</p>
+
 <p align="center"><img src="docs/screenshots/notes.png" alt="rjot: captured notes with color labels" width="440"></p>
 
 Select text in any app and double-tap **⇧ Shift**. The selection is saved as a note, along with the name of the app it came from, and a short sound confirms it. You stay where you were. If nothing is selected, the same gesture brings rjot forward with the note box focused. Type a note and press ⌘↩, and rjot gets out of the way again.
