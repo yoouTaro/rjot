@@ -15,7 +15,8 @@
   <a href="https://github.com/yoouTaro/rjot/releases">Download</a>
 </p>
 
-<p align="center"><img src="docs/screenshots/notes.png" alt="rjot: captured notes with color labels" width="440"></p>
+<p align="center"><img src="docs/clips/capture.gif" alt="Two selections saved with double-tap Shift (one with its page link), then Option-Shift-V pastes a queued prompt into Cursor and checks it off" width="440"></p>
+<p align="center"><sub>Tap ⇧ twice to keep a selection; ⌥⇧V pastes a queued prompt. Recorded from a scripted demo run (<code>scripts/record.sh</code>).</sub></p>
 
 Select text in any app and double-tap **⇧ Shift**. The selection is saved as a note, along with the name of the app it came from, and a short sound confirms it. You stay where you were. If nothing is selected, the same gesture brings rjot forward with the note box focused. Type a note and press ⌘↩, and rjot gets out of the way again.
 

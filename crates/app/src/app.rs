@@ -159,6 +159,16 @@ struct Demo {
     capturable: bool,
     /// Open the ⌥⇧V paste picker as if Safari were in front.
     picker: bool,
+    /// RJOT_DEMO_STEPS: a scripted run for scripts/record.sh, e.g.
+    /// `wait:700;keys:⇧ ⇧;capture:Safari|text|url|title;picker:Cursor;down;choose;done`.
+    steps: std::collections::VecDeque<String>,
+    next_step: f64,
+    /// Key caps shown on screen while the script "presses" them, and until when.
+    keys: Option<(String, f64)>,
+    /// File to create when the script finishes.
+    done: Option<std::path::PathBuf>,
+    /// The script pressed ↩ in the picker.
+    enter: bool,
     /// File to create once the scene has settled.
     ready: Option<std::path::PathBuf>,
     frames: u32,
@@ -179,6 +189,11 @@ impl Demo {
             settings: var("RJOT_DEMO_SETTINGS").is_some(),
             capturable: var("RJOT_DEMO_CAPTURABLE").is_some(),
             picker: var("RJOT_DEMO_PICKER").is_some(),
+            steps: var("RJOT_DEMO_STEPS").map(|s| s.split(';').map(str::to_string).collect()).unwrap_or_default(),
+            next_step: 0.0,
+            keys: None,
+            done: var("RJOT_DEMO_DONE").map(Into::into),
+            enter: false,
             ready: var("RJOT_DEMO_READY").map(Into::into),
             frames: 0,
         }
@@ -336,6 +351,89 @@ impl App {
                 }
                 Done::Pasted { result: Err(e), .. } => self.notify(e, None),
             }
+        }
+    }
+
+    /// Advance the scripted demo (debug builds, scripts/record.sh).
+    fn run_demo_steps(&mut self, ctx: &egui::Context, now: f64) {
+        if self.demo.steps.is_empty() {
+            return;
+        }
+        ctx.request_repaint();
+        while now >= self.demo.next_step {
+            let Some(step) = self.demo.steps.pop_front() else { break };
+            let (cmd, arg) = step.split_once(':').unwrap_or((step.as_str(), ""));
+            match cmd {
+                "wait" => self.demo.next_step = now + arg.parse::<f64>().unwrap_or(0.0) / 1000.0,
+                "keys" => self.demo.keys = Some((arg.to_string(), now + 1.1)),
+                "capture" => {
+                    let mut parts = arg.split('|');
+                    let source = parts.next().map(str::to_string);
+                    let text = parts.next().unwrap_or("").to_string();
+                    let url = parts.next().filter(|u| !u.is_empty()).map(str::to_string);
+                    let title = parts.next().filter(|t| !t.is_empty()).map(str::to_string);
+                    let meta = rjot_core::Meta { source: source.clone(), url, title, image: None };
+                    if let Some(id) = self.change(|s| s.add_with(Kind::Note, &text, meta, time::now())) {
+                        self.tab = Tab::Notes;
+                        self.flash = Some((id, now));
+                        self.notify(format!("Saved from {}", source.unwrap_or_default()), None);
+                    }
+                }
+                "picker" => {
+                    self.picker = Some(Picker {
+                        front: macos::Front { name: Some(arg.to_string()), bundle: None, pid: 0 },
+                        query: String::new(),
+                        selected: 0,
+                        focus: true,
+                    });
+                }
+                "down" => {
+                    if let Some(p) = &mut self.picker {
+                        p.selected += 1;
+                    }
+                }
+                "choose" => self.demo.enter = true,
+                "tab" => self.tab = if arg == "queue" { Tab::Queue } else { Tab::Notes },
+                "done" => {
+                    if let Some(f) = &self.demo.done {
+                        let _ = std::fs::write(f, "");
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    /// The key caps a demo script "presses", drawn over the window so a
+    /// recording shows what triggered what.
+    fn paint_demo_keys(&mut self, ctx: &egui::Context, now: f64) {
+        let Some((label, until)) = &self.demo.keys else { return };
+        if now > *until {
+            self.demo.keys = None;
+            return;
+        }
+        let start = until - 1.1;
+        let caps: Vec<&str> = label.split_whitespace().collect();
+        let painter = ctx.layer_painter(egui::LayerId::new(egui::Order::Foreground, Id::new("demo-keys")));
+        let screen = ctx.content_rect();
+        let cap = vec2(54.0, 50.0);
+        let gap = 10.0;
+        let width = caps.len() as f32 * cap.x + (caps.len() as f32 - 1.0) * gap + 28.0;
+        let fade = ((until - now) / 0.25).clamp(0.0, 1.0) as f32 * ((now - start) / 0.12).clamp(0.0, 1.0) as f32;
+        let panel = Rect::from_center_size(egui::pos2(screen.center().x, screen.bottom() - 84.0), vec2(width, cap.y + 24.0));
+        painter.rect_filled(panel, CornerRadius::same(14), egui::Color32::from_black_alpha((200.0 * fade) as u8));
+        for (i, c) in caps.iter().enumerate() {
+            // Each cap goes down for a beat, one after another (a double tap
+            // shows the same key twice).
+            let t = now - start - i as f64 * 0.28;
+            let down = (0.05..0.2).contains(&t);
+            let x = panel.left() + 14.0 + i as f32 * (cap.x + gap);
+            let rect = Rect::from_min_size(egui::pos2(x, panel.top() + 12.0 + if down { 3.0 } else { 0.0 }), cap);
+            let fill = if down { theme::ACCENT() } else { egui::Color32::from_gray(235) };
+            painter.rect_filled(rect.translate(vec2(0.0, 4.0)), CornerRadius::same(8), egui::Color32::from_black_alpha((120.0 * fade) as u8));
+            painter.rect_filled(rect, CornerRadius::same(8), fill.gamma_multiply(fade));
+            let ink = egui::Color32::from_gray(30).gamma_multiply(fade);
+            painter.text(rect.center(), egui::Align2::CENTER_CENTER, *c, FontId::proportional(22.0), ink);
         }
     }
 
@@ -919,9 +1017,10 @@ impl App {
             egui::Popup::open_id(ui.ctx(), color_popup);
         }
         let picking = egui::Popup::is_id_open(ui.ctx(), color_popup);
+        let scripted = !self.demo.steps.is_empty() || self.demo.done.is_some();
         let hovered = picking
             || self.demo.hover == Some(item.id)
-            || ui.data(|d| d.get_temp::<bool>(hover_id)).unwrap_or(false);
+            || (!scripted && ui.data(|d| d.get_temp::<bool>(hover_id)).unwrap_or(false));
         let t = ui.input(|i| i.time);
         let glow = match self.flash {
             Some((id, at)) if id == item.id && t - at < FLASH_SECS => {
@@ -1196,6 +1295,7 @@ impl App {
     /// Queued prompts to paste into the app that was in front: type to
     /// filter, ↑↓ to choose, ↩ to paste, esc to go back.
     fn picker(&mut self, ui: &mut Ui) {
+        let scripted_enter = std::mem::take(&mut self.demo.enter);
         let Some(p) = &mut self.picker else { return };
         let prompts: Vec<Item> = {
             let s = self.store.lock().unwrap();
@@ -1272,10 +1372,18 @@ impl App {
                 ui.add_space(2.0);
             }
         });
-        if enter {
+        if enter || scripted_enter {
             chosen = prompts.get(p.selected).cloned();
         }
-        if let Some(item) = chosen {
+        if let Some(item) = &chosen
+            && p.front.pid == 0
+        {
+            let item = item.clone();
+            // A demo picker: nothing to paste into.
+            self.picker = None;
+            self.change(|s| s.set_done(item.id, true));
+            self.notify(format!("Pasted into {target} and checked off"), Some(Undo::Uncheck(item.id)));
+        } else if let Some(item) = chosen {
             let pid = p.front.pid;
             self.picker = None;
             macos::hide();
@@ -1497,6 +1605,8 @@ impl eframe::App for App {
         }
         self.last_tab = Some(self.tab);
 
+        self.run_demo_steps(ctx, now);
+        self.paint_demo_keys(ctx, now);
         self.demo.frames = self.demo.frames.saturating_add(1);
         if let Some(ready) = &self.demo.ready {
             if self.demo.frames == 12 {
