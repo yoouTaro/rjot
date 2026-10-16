@@ -138,6 +138,8 @@ pub struct App {
     /// Set by Quit: let the window close instead of hiding it.
     quitting: bool,
     exporter: Exporter,
+    /// The tab shown last frame, to notice when Scratch is opened.
+    last_tab: Option<Tab>,
     /// What the menu last showed: (store revision, paused, login).
     menu_seen: Option<(u64, bool, Option<bool>)>,
 }
@@ -245,6 +247,7 @@ impl App {
             images: HashMap::new(),
             quitting: false,
             exporter,
+            last_tab: None,
             menu_seen: None,
         }
     }
@@ -1324,6 +1327,15 @@ impl App {
     fn scratch(&mut self, ui: &mut Ui, now: f64) {
         let blur = self.blur(ui);
         let id = Id::new("scratch");
+        // Opening Scratch puts you straight into it, at the end of the text.
+        // In sensitive mode it waits for a click, so opening doesn't reveal it.
+        if self.last_tab != Some(Tab::Scratch) && !self.settings.sensitive && self.picker.is_none() {
+            let mut state = egui::text_edit::TextEditState::load(ui.ctx(), id).unwrap_or_default();
+            let end = egui::text::CCursor::new(self.scratch.chars().count());
+            state.cursor.set_char_range(Some(egui::text::CCursorRange::one(end)));
+            state.store(ui.ctx(), id);
+            ui.memory_mut(|m| m.request_focus(id));
+        }
         let editing = ui.memory(|m| m.has_focus(id));
         Frame::new()
             .fill(theme::INPUT())
@@ -1483,6 +1495,7 @@ impl eframe::App for App {
         for action in actions {
             self.apply(ctx, action);
         }
+        self.last_tab = Some(self.tab);
 
         self.demo.frames = self.demo.frames.saturating_add(1);
         if let Some(ready) = &self.demo.ready {

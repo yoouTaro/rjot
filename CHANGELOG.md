@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Scratch** is ready to type the moment you open it (⌘3 or the tab), with the cursor at the end. In sensitive mode it stays blurred until you click.
 - **Khmer:** notes, prompts, the scratchpad, search and page titles are drawn shaped (subscript consonants stack, vowels sit where they belong) and wrap at word breaks. rjot uses Kantumruy Pro when it's installed, otherwise the Khmer Sangam MN font that comes with macOS. Markdown file names keep Khmer intact.
 
 ## 0.0.2-alpha — 2026-10-16
