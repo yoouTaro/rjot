@@ -1,0 +1,222 @@
+{
+  "title": "Choose the visual world for the rjot landing page",
+  "question": "The roll assigned the marked-up printout. Keep it, take the pick or an alternate, or re-roll.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "The Marked-up Printout",
+      "kicker": "THE ROLL",
+      "lineage": "laser printouts marked up with fluorescent highlighters at a desk",
+      "thesis": "The page is a stack of real printouts you mark up; every highlighted passage lifts off the paper into rjot.",
+      "palette": [
+        "#FAFAF6",
+        "#141414",
+        "#FFF03A",
+        "#FF71B5",
+        "#79EE7B",
+        "#FFA640",
+        "#6CD4FF"
+      ],
+      "materials": [
+        "laser-printed paper with print headers and page numbers",
+        "translucent fluorescent highlighter ink",
+        "staples and paper clips"
+      ],
+      "viewport": "A printed AI chat transcript fills the screen; a yellow stroke drags across one reply, \u21e7 \u21e7 prints in the margin, and the marked line drops into a live rjot window pinned at right. Download sits in the print header.",
+      "risk": "If the strokes read as CSS bars it is a gimmick; ink must be drawn, uneven, multiplied over the type.",
+      "raised": [
+        {
+          "from": "challenger-blackbook",
+          "raise": "Wildstyle blackbook: every stroke draws in sequence as one marker pass, never a fade-in."
+        },
+        {
+          "from": "challenger-vu",
+          "raise": "VU meter bridge: captured notes land with mass, a damped overshoot like a needle settling."
+        },
+        {
+          "from": "challenger-airport",
+          "raise": "Airport wayfinding: each fluoro ink means one thing only, the note's color label, never decoration."
+        }
+      ]
+    },
+    {
+      "id": "model-pick",
+      "label": "Shift, Twice",
+      "kicker": "IMPECCABLE\u2019S PICK",
+      "lineage": "keycap set catalogs and keyboard spec sheets",
+      "thesis": "The mechanism is a key; the page is a keycap catalog where the Shift key is the product.",
+      "palette": [
+        "#E3E0D8",
+        "#B9B5AC",
+        "#2E2D2B",
+        "#C8743F"
+      ],
+      "materials": [
+        "PBT keycap plastic with dye-sub legends",
+        "anodized aluminum plate",
+        "spec-sheet line drawings"
+      ],
+      "viewport": "Two monumental Shift keycaps you can press, or that press when you tap your real Shift twice, and the app window catches the result.",
+      "risk": "Keyboard-enthusiast imagery is a familiar dev-tool look; it needs real keycap rendering to rise above it."
+    },
+    {
+      "id": "challenger-airport",
+      "label": "Terminal Yellow Wayfinding",
+      "verdict": "competitive",
+      "lineage": "international airport sign systems",
+      "thesis": "Capture as a route: Selection \u2192 \u21e7 \u21e7 \u2192 Notes, signed in monumental yellow bands.",
+      "palette": [
+        "#FFD200",
+        "#111111",
+        "#FFFFFF"
+      ],
+      "materials": [
+        "enamel sign panels",
+        "white pictograms on black insets"
+      ],
+      "viewport": "One yellow band across the top: \u2018Selected text  \u21e7 \u21e7  Notes \u2192\u2019 at gate-number scale, the app window down the concourse.",
+      "case": "Holds product clarity (the gesture reads as a route) but builders don't recognize themselves in a terminal.",
+      "risk": "Reads as transit pastiche if the sign grammar is applied to everything."
+    },
+    {
+      "id": "challenger-blackbook",
+      "label": "Wildstyle Blackbook",
+      "verdict": "declined",
+      "lineage": "graffiti writers' marker sketchbooks",
+      "thesis": "The name worked up in marker until it's barely readable.",
+      "palette": [
+        "#F1E9D6",
+        "#111111",
+        "#E8432B",
+        "#3AA8E0"
+      ],
+      "materials": [
+        "marker on book paper",
+        "offset keyline"
+      ],
+      "viewport": "rjot as an interlocking marker piece.",
+      "case": "Loses both axes: illegible by design, and not the audience's world.",
+      "kept": "Strokes drawn in sequence, one marker pass at a time.",
+      "risk": "Legibility."
+    },
+    {
+      "id": "challenger-vu",
+      "label": "VU Meter Bridge",
+      "verdict": "declined",
+      "lineage": "recording desk meter bridges",
+      "thesis": "A row of needles that leans into the red together.",
+      "palette": [
+        "#F2EAD7",
+        "#1A1A1A",
+        "#C8352B",
+        "#6B4A2E"
+      ],
+      "materials": [
+        "meter glass",
+        "walnut and steel"
+      ],
+      "viewport": "A row of meters, one per capture.",
+      "case": "Loses both axes: rjot has no signal level to meter.",
+      "kept": "Motion with mass: a damped overshoot when a note lands.",
+      "risk": "Pure metaphor."
+    },
+    {
+      "id": "challenger-algorave",
+      "label": "Algorave Source Floor",
+      "verdict": "declined",
+      "lineage": "live-coded music nights",
+      "thesis": "Projected code that edits the room.",
+      "palette": [
+        "#050505",
+        "#39FF88",
+        "#FF3EA5",
+        "#FFB000"
+      ],
+      "materials": [
+        "projector black",
+        "phosphor syntax"
+      ],
+      "viewport": "A live code buffer as the stage.",
+      "case": "Loses both axes: neon on black is the dev-tool rut, and rjot is not code.",
+      "kept": "Change previewed before it happens: the stroke shows before the capture.",
+      "risk": "Category clich\u00e9."
+    },
+    {
+      "id": "challenger-daylight",
+      "label": "Daylight Section",
+      "verdict": "declined",
+      "lineage": "architectural sun studies",
+      "thesis": "Light moving through rooms over a day.",
+      "palette": [
+        "#F4F1EA",
+        "#2B2B2B",
+        "#E9B949",
+        "#7D93B2"
+      ],
+      "materials": [
+        "limewash",
+        "section poche"
+      ],
+      "viewport": "A building section with a moving beam.",
+      "case": "Loses both axes: no relation to keeping text.",
+      "kept": "Tabular timestamps pinned to every moment.",
+      "risk": "Off-subject."
+    },
+    {
+      "id": "challenger-coil",
+      "label": "Coiled Earth Tower",
+      "verdict": "declined",
+      "lineage": "coil-built clay architecture",
+      "thesis": "A slow ascending record of courses.",
+      "palette": [
+        "#B5643C",
+        "#5A3A26",
+        "#EFE4D2"
+      ],
+      "materials": [
+        "terracotta coils",
+        "slip seams"
+      ],
+      "viewport": "A tower of clay courses.",
+      "case": "Loses both axes.",
+      "kept": "Each capture adds one course to a visible, growing record.",
+      "risk": "Off-subject."
+    }
+  ],
+  "reroll": {
+    "registers": [
+      "safer",
+      "bolder"
+    ]
+  },
+  "buildPath": {
+    "value": "code",
+    "toggle": false
+  },
+  "canon": true,
+  "canonCard": {
+    "label": "The category standard",
+    "thesis": "A dark developer-tool page: headline, app screenshot, feature grid, download.",
+    "palette": [
+      "#0B0B0C",
+      "#F4F4F5",
+      "#D38D5C"
+    ],
+    "materials": [
+      "clean grid",
+      "real app screenshots"
+    ],
+    "viewport": "Centered headline over the app window, at full craft.",
+    "risk": "Indistinguishable from every other Mac utility page by design."
+  },
+  "steer": true,
+  "seed": {
+    "key": "d2fd777c",
+    "scope": "direction",
+    "mode": "persuade",
+    "assignedIndex": 4,
+    "assignedIndexRefersTo": "position 4 of the builder's own ordered grounded list (keycap catalog, receipt tape, index cards, highlighter on printed paper, ...), shown here as options[0] \"The Marked-up Printout\"",
+    "assignedOption": "assigned",
+    "answer": "model-pick"
+  }
+}

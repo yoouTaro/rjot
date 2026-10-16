@@ -2,3 +2,5 @@ target/
 dist/
 .DS_Store
 .claude/
+.impeccable/review/
+.impeccable/questions/

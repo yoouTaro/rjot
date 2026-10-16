@@ -3,29 +3,34 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>rjot: keep the text you highlight</title>
-  <meta name="description" content="A small Mac app. Select text in any app, tap Shift twice, and it's saved as a note. Free and open source.">
-  <meta name="theme-color" content="#FBFBFA">
-  <meta property="og:title" content="rjot: keep the text you highlight">
+  <title>rjot: tap Shift twice to keep what you highlight</title>
+  <meta name="description" content="A small Mac app. Select text in any app, tap Shift twice, and it's saved as a note with the app it came from. Free, open source, local.">
+  <meta name="theme-color" content="#C7CBCF">
+  <meta property="og:title" content="rjot: tap Shift twice">
   <meta property="og:description" content="Select text in any app, tap Shift twice, and it's saved as a note. A small, free Mac app.">
   <meta property="og:image" content="https://yoouTaro.github.io/rjot/img/hero.webp">
   <link rel="icon" href="img/icon.png">
-  <link rel="preload" href="fonts/instrument-serif.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css">
   <script>document.documentElement.classList.add("js")</script>
 </head>
 <body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-shift" viewBox="0 0 24 24"><path d="M12 3.5 3.5 12.5H8v8h8v-8h4.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-return" viewBox="0 0 24 24"><path d="M19 5v7a3 3 0 0 1-3 3H6m0 0 4-4m-4 4 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-cmd" viewBox="0 0 24 24"><path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-opt" viewBox="0 0 24 24"><path d="M3 5.5h6l6 13h6M14 5.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </svg>
   <a class="skip" href="#main">Skip to content</a>
 
   <header class="bar">
     <div class="wrap bar-inner">
-      <a class="brand" href="#top"><img src="img/icon.png" width="24" height="24" alt=""> rjot</a>
-      <nav>
-        <a href="#how">How it works</a>
-        <a href="#privacy">Privacy</a>
-        <a href="https://github.com/yoouTaro/rjot">GitHub</a>
-        <a class="btn btn-sm" href="#download">Download</a>
+      <a class="brand" href="#top" aria-label="rjot home"><img src="img/icon.png" width="28" height="28" alt=""><span>rjot</span></a>
+      <nav aria-label="Main">
+        <a class="key key-mod key-sm nav-extra" href="#kits"><span class="cap">Kits</span></a>
+        <a class="key key-mod key-sm nav-extra" href="#specs"><span class="cap">Specs</span></a>
+        <a class="key key-mod key-sm" href="https://github.com/yoouTaro/rjot"><span class="cap">GitHub</span></a>
+        <a class="key key-accent key-sm" href="#download"><span class="cap">Download</span></a>
       </nav>
     </div>
   </header>
@@ -34,152 +39,177 @@
     <section class="hero" id="top">
       <div class="wrap hero-grid">
         <div class="hero-copy">
-          <p class="pill reveal">Free &middot; Open source &middot; macOS</p>
-          <h1 class="reveal">Keep the text you <span class="mark">highlight</span>.</h1>
-          <p class="lead reveal">Select text in any app and tap <kbd>&#8679;</kbd> twice. rjot saves it as a note, along with the app it came from. You stay in the app you were using.</p>
-          <div class="cta reveal">
-            <a class="btn" href="https://github.com/yoouTaro/rjot/releases/latest">Download for Mac</a>
-            <a class="btn btn-ghost" href="https://github.com/yoouTaro/rjot">View source</a>
+          <h1>Tap Shift twice.</h1>
+          <p class="lead">Select text in any app and tap <span class="kbd" aria-label="Shift"><svg><use href="#i-shift"/></svg></span> twice. rjot keeps it as a note, along with the app it came from, and you never leave the app you were in.</p>
+          <div class="actions">
+            <a class="key key-accent key-wide" href="https://github.com/yoouTaro/rjot/releases/latest"><span class="cap"><span>Download for Mac</span><svg class="legend-icon"><use href="#i-return"/></svg></span></a>
+            <a class="key key-mod" href="https://github.com/yoouTaro/rjot"><span class="cap">View source</span></a>
           </div>
-          <p class="facts reveal">v0.0.1-alpha &middot; Apple silicon &middot; 3.4 MB &middot; MIT</p>
+          <p class="facts">v0.0.1-alpha &middot; macOS 11+, Apple silicon &middot; 3.4 MB &middot; MIT</p>
         </div>
-        <figure class="hero-shot reveal">
-          <img src="img/hero.webp" width="440" height="660" alt="rjot's Notes list: saved snippets, each with its source app and a color label">
-        </figure>
-      </div>
-    </section>
 
-    <section class="section" id="how">
-      <div class="wrap">
-        <h2 class="reveal">Three moves, no switching.</h2>
-        <ol class="steps">
-          <li class="reveal" style="--i:0">
-            <span class="num">01</span>
-            <h3>Select</h3>
-            <p>Highlight text anywhere: a web page, an editor, a reply from an AI.</p>
-          </li>
-          <li class="reveal" style="--i:1">
-            <span class="num">02</span>
-            <h3><kbd>&#8679;</kbd> <kbd>&#8679;</kbd></h3>
-            <p>Tap Shift twice. A short pop tells you it worked.</p>
-          </li>
-          <li class="reveal" style="--i:2">
-            <span class="num">03</span>
-            <h3>Kept</h3>
-            <p>It's a note in rjot, with the app it came from and the time.</p>
-          </li>
-        </ol>
+        <div class="window" aria-label="A working copy of rjot's Notes list">
+          <div class="win-bar">
+            <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="win-tabs"><b>Notes <em data-count>4</em></b><span>Queue</span><span>Scratch</span></span>
+          </div>
+          <form class="composer" data-composer hidden>
+            <label class="sr-only" for="quick">Quick note</label>
+            <textarea id="quick" rows="2" placeholder="Nothing was selected, so rjot opened a quick note. Type, then press &#8984;&#8617;."></textarea>
+          </form>
+          <ol class="notes" data-notes aria-live="polite">
+            <li style="--label:var(--l-purple)"><p>Capture now, sort later.</p><small>Claude &middot; 2m</small></li>
+            <li><p>Meeting moved to Thursday 10:30, same room.</p><small>Messages &middot; 9m</small></li>
+            <li style="--label:var(--l-orange)"><p>Browsers often leave AXSelectedText empty, so fall back to a copy and put the clipboard back.</p><small>Notes &middot; 24m</small></li>
+            <li style="--label:var(--l-blue)"><p>CREATE INDEX CONCURRENTLY can't run inside a transaction block.</p><small>Claude &middot; 1h</small></li>
+          </ol>
+          <p class="win-foot">Double-tap Shift to save selected text</p>
+        </div>
       </div>
-    </section>
 
-    <section class="section" id="features">
-      <div class="wrap">
-        <h2 class="reveal">Small, on purpose.</h2>
-        <p class="section-lead reveal">A to-do list, a clipboard and a scratchpad. That's all it tries to be.</p>
-        <div class="bento">
-          <article class="card card-tall reveal" style="--i:0">
-            <div class="card-text">
-              <h3>A queue for prompts</h3>
-              <p>Write prompts for later. Copy one into ChatGPT, Claude or Cursor and it's checked off.</p>
-            </div>
-            <div class="card-shot"><img src="img/queue.webp" loading="lazy" width="440" height="660" alt="The Queue tab with prompts to use later and one checked off"></div>
-          </article>
-          <article class="card reveal" style="--i:1">
-            <div class="card-text">
-              <h3>Color labels</h3>
-              <p>Tag a note with one of six colors, then filter the list to one color.</p>
-            </div>
-            <div class="card-shot card-shot-mid"><img src="img/colors.webp" loading="lazy" width="440" height="660" alt="The color picker open on a note"></div>
-          </article>
-          <article class="card reveal" style="--i:2">
-            <div class="card-text">
-              <h3>Sensitive mode</h3>
-              <p>Note text is blurred until you hold <kbd>&#8997;</kbd>, and the window stays out of screenshots and screen sharing.</p>
-            </div>
-            <div class="card-shot"><img src="img/sensitive.webp" loading="lazy" width="440" height="660" alt="Notes blurred in sensitive mode"></div>
-          </article>
-          <article class="card card-small reveal" style="--i:3">
-            <h3>Quick note</h3>
-            <p>Nothing selected? <kbd>&#8679;</kbd> <kbd>&#8679;</kbd> opens the note box. Type, press <kbd>&#8984;</kbd> <kbd>&#8617;</kbd>, and rjot gets out of the way.</p>
-          </article>
-          <article class="card card-small reveal" style="--i:4">
-            <h3>Six themes</h3>
-            <p>Each in dark and light, following your Mac or set by hand.</p>
-            <ul class="swatches" aria-label="Themes">
-              <li style="--d:#151311;--l:#F7F4F0;--da:#D38D5C;--la:#B0643A" title="Copper"></li>
-              <li style="--d:#141518;--l:#F5F5F7;--da:#8AA4F8;--la:#3B6FE0" title="Graphite"></li>
-              <li style="--d:#121513;--l:#F4F6F2;--da:#8FC28F;--la:#3F7F4A" title="Sage"></li>
-              <li style="--d:#0F1418;--l:#F2F6F8;--da:#5FC3D6;--la:#1F7F99" title="Ocean"></li>
-              <li style="--d:#151217;--l:#F7F4F8;--da:#C49BF0;--la:#7B4BC4" title="Plum"></li>
-              <li style="--d:#111111;--l:#F6F6F6;--da:#F2F2F2;--la:#161616" title="Mono"></li>
-            </ul>
-          </article>
-          <article class="card card-small reveal" style="--i:5">
-            <h3>A scratchpad</h3>
-            <p>One page for anything else, saved as you type.</p>
-          </article>
+      <div class="deck">
+        <p class="try" data-try>Try it here: select any text on this page, then tap <b>Shift</b> twice.</p>
+        <div class="plate" data-plate>
+          <button class="key key-accent shift" data-shift="1" style="--w:2.25" aria-label="Left Shift"><span class="cap"><svg class="legend-icon"><use href="#i-shift"/></svg><span>shift</span></span></button>
+          <span class="key alpha" aria-hidden="true"><span class="cap">Z</span></span>
+          <span class="key alpha" aria-hidden="true"><span class="cap">X</span></span>
+          <span class="key alpha" aria-hidden="true"><span class="cap">C</span></span>
+          <span class="key alpha" aria-hidden="true"><span class="cap">V</span></span>
+          <span class="key alpha" aria-hidden="true"><span class="cap">B</span></span>
+          <span class="key alpha" aria-hidden="true"><span class="cap">N</span></span>
+          <span class="key alpha" aria-hidden="true"><span class="cap">M</span></span>
+          <span class="key alpha two" aria-hidden="true"><span class="cap"><i>&lt;</i><i>,</i></span></span>
+          <span class="key alpha two" aria-hidden="true"><span class="cap"><i>&gt;</i><i>.</i></span></span>
+          <span class="key alpha two" aria-hidden="true"><span class="cap"><i>?</i><i>/</i></span></span>
+          <button class="key key-accent shift" data-shift="2" style="--w:2.75" aria-label="Right Shift"><span class="cap"><svg class="legend-icon"><use href="#i-shift"/></svg><span>shift</span></span></button>
         </div>
       </div>
     </section>
 
-    <section class="section" id="privacy">
-      <div class="wrap split">
+    <section class="kits" id="kits">
+      <div class="wrap">
+        <h2 class="section-title">The kits</h2>
+        <p class="section-lead">rjot is a to-do list, a clipboard and a scratchpad, and it doesn't try to be more. Each kit comes with its own caps. Every view is the real app.</p>
+
+        <div class="catalog">
+          <article class="entry entry-base">
+            <figure class="shot"><img src="img/hero.webp" width="440" height="660" loading="lazy" alt="The Notes list: captured snippets, each with its source app, time and color label"></figure>
+            <div class="entry-body">
+              <h3>Base kit: Notes</h3>
+              <p class="contents">6 caps</p>
+              <p>Every selection you keep lands here, newest first, with the app it came from and when. Nothing selected? The same gesture opens a quick note.</p>
+              <div class="tray">
+                <div class="combo"><span class="key"><span class="cap"><svg><use href="#i-shift"/></svg></span></span><span class="key"><span class="cap"><svg><use href="#i-shift"/></svg></span></span><small>Save the selection</small></div>
+                <div class="combo"><span class="key"><span class="cap"><svg><use href="#i-cmd"/></svg></span></span><span class="key"><span class="cap"><svg><use href="#i-return"/></svg></span></span><small>Save a typed note</small></div>
+                <div class="combo"><span class="key"><span class="cap"><svg><use href="#i-cmd"/></svg></span></span><span class="key"><span class="cap">F</span></span><small>Search</small></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="entry entry-half">
+            <figure class="shot"><img src="img/queue.webp" width="440" height="660" loading="lazy" alt="The Queue: prompts saved for later, one checked off"></figure>
+            <div class="entry-body">
+              <h3>Queue kit</h3>
+              <p class="contents">4 caps</p>
+              <p>Write prompts before you need them. Copy one into ChatGPT, Claude or Cursor and it's checked off.</p>
+              <div class="tray">
+                <div class="combo"><span class="key"><span class="cap"><svg><use href="#i-cmd"/></svg></span></span><span class="key"><span class="cap">2</span></span><small>The queue</small></div>
+                <div class="combo"><span class="key"><span class="cap"><svg><use href="#i-cmd"/></svg></span></span><span class="key"><span class="cap">3</span></span><small>Scratch pad</small></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="entry entry-half">
+            <figure class="shot"><img src="img/sensitive.webp" width="440" height="660" loading="lazy" alt="Notes blurred in sensitive mode"></figure>
+            <div class="entry-body">
+              <h3>Sensitive kit</h3>
+              <p class="contents">4 caps</p>
+              <p>Note text blurs until you hold Option, and the window stays out of screenshots and screen sharing. Copies a password manager marks as secret are never saved.</p>
+              <div class="tray">
+                <div class="combo"><span class="key"><span class="cap"><svg><use href="#i-cmd"/></svg></span></span><span class="key"><span class="cap"><svg><use href="#i-shift"/></svg></span></span><span class="key"><span class="cap">S</span></span><small>Sensitive mode</small></div>
+                <div class="combo"><span class="key"><span class="cap"><svg><use href="#i-opt"/></svg></span></span><small>Hold to peek</small></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="entry entry-wide">
+            <div class="entry-body">
+              <h3>Novelties: color labels</h3>
+              <p class="contents">6 caps</p>
+              <p>Six labels for anything you want to find again. Tag a note from its card, then filter the list to one color.</p>
+              <div class="tray tray-novelty" role="list" aria-label="The six label colors">
+                <span role="listitem" class="key nov" style="--cap:url(img/caps/red.png)"><span class="cap">Red</span></span>
+                <span role="listitem" class="key nov" style="--cap:url(img/caps/orange.png)"><span class="cap">Orange</span></span>
+                <span role="listitem" class="key nov" style="--cap:url(img/caps/yellow.png)"><span class="cap">Yellow</span></span>
+                <span role="listitem" class="key nov" style="--cap:url(img/caps/green.png)"><span class="cap">Green</span></span>
+                <span role="listitem" class="key nov" style="--cap:url(img/caps/blue.png)"><span class="cap">Blue</span></span>
+                <span role="listitem" class="key nov" style="--cap:url(img/caps/purple.png)"><span class="cap">Purple</span></span>
+              </div>
+            </div>
+            <figure class="shot"><img src="img/colors.webp" width="440" height="660" loading="lazy" alt="The color picker open on a note"></figure>
+          </article>
+
+          <article class="entry entry-wide">
+            <div class="entry-body">
+              <h3>Colorways</h3>
+              <p class="contents">6 themes &middot; 12 colorways</p>
+              <p>Follow your Mac's appearance, or pick one and keep it.</p>
+              <ul class="ways">
+                <li style="--d:#151311;--dc:#24211D;--da:#D38D5C;--l:#F7F4F0;--lc:#EFEAE4;--la:#B0643A"><span class="mini"><i></i><i></i><i></i><b></b></span><span class="mini light"><i></i><i></i><i></i><b></b></span>Copper</li>
+                <li style="--d:#141518;--dc:#23252A;--da:#8AA4F8;--l:#F5F5F7;--lc:#ECECEF;--la:#3B6FE0"><span class="mini"><i></i><i></i><i></i><b></b></span><span class="mini light"><i></i><i></i><i></i><b></b></span>Graphite</li>
+                <li style="--d:#121513;--dc:#212622;--da:#8FC28F;--l:#F4F6F2;--lc:#E9EEE6;--la:#3F7F4A"><span class="mini"><i></i><i></i><i></i><b></b></span><span class="mini light"><i></i><i></i><i></i><b></b></span>Sage</li>
+                <li style="--d:#0F1418;--dc:#1C252B;--da:#5FC3D6;--l:#F2F6F8;--lc:#E5EDF1;--la:#1F7F99"><span class="mini"><i></i><i></i><i></i><b></b></span><span class="mini light"><i></i><i></i><i></i><b></b></span>Ocean</li>
+                <li style="--d:#151217;--dc:#252028;--da:#C49BF0;--l:#F7F4F8;--lc:#EEE8F1;--la:#7B4BC4"><span class="mini"><i></i><i></i><i></i><b></b></span><span class="mini light"><i></i><i></i><i></i><b></b></span>Plum</li>
+                <li style="--d:#111111;--dc:#202020;--da:#F2F2F2;--l:#F6F6F6;--lc:#EDEDED;--la:#161616"><span class="mini"><i></i><i></i><i></i><b></b></span><span class="mini light"><i></i><i></i><i></i><b></b></span>Mono</li>
+              </ul>
+            </div>
+            <figure class="shot"><img src="img/settings.webp" width="440" height="660" loading="lazy" alt="Settings: appearance, the six themes, sensitive mode and sound"></figure>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="specs" id="specs">
+      <div class="wrap specs-grid">
         <div>
-          <h2 class="reveal">Nothing leaves your Mac.</h2>
-          <p class="section-lead reveal">rjot has no account, no sync and no analytics. It never connects to the network.</p>
+          <h2 class="section-title">Specifications</h2>
+          <p class="section-lead">What it is, what it reads, and where your notes go.</p>
         </div>
-        <ul class="checks">
-          <li class="reveal" style="--i:0"><strong>One file you can read.</strong> Your notes are plain JSON in <code>~/Library/Application&nbsp;Support/dev.rjot.rjot</code>.</li>
-          <li class="reveal" style="--i:1"><strong>Passwords are skipped.</strong> If a password manager marks a copy as concealed, rjot doesn't save it.</li>
-          <li class="reveal" style="--i:2"><strong>Your clipboard comes back.</strong> When rjot has to copy to read a selection, it puts your clipboard back the way it was.</li>
-          <li class="reveal" style="--i:3"><strong>Open source.</strong> Every line is on GitHub, under the MIT license.</li>
-        </ul>
+        <dl class="sheet">
+          <div><dt>Gesture</dt><dd>Two taps of Shift alone, under <span class="num">350&nbsp;ms</span> apart</dd></div>
+          <div><dt>Reads</dt><dd>The focused app's selected text through Accessibility; otherwise <span class="kbd kbd-dark" aria-label="Command"><svg><use href="#i-cmd"/></svg></span><span class="kbd kbd-dark">C</span>, with your clipboard put back exactly</dd></div>
+          <div><dt>Keeps</dt><dd>One JSON file, <code>~/Library/<wbr>Application Support/<wbr>dev.rjot.rjot/<wbr>notes.json</code></dd></div>
+          <div><dt>Sends</dt><dd>Nothing. No account, no sync, no analytics, no network</dd></div>
+          <div><dt>Skips</dt><dd>Copies a password manager marks as concealed</dd></div>
+          <div><dt>Runs on</dt><dd>macOS 11 or later, Apple silicon</dd></div>
+          <div><dt>Weighs</dt><dd><span class="num">3.4&nbsp;MB</span> zipped</dd></div>
+          <div><dt>Built with</dt><dd>Rust and egui, one native binary</dd></div>
+          <div><dt>License</dt><dd>MIT, source on GitHub</dd></div>
+        </dl>
       </div>
     </section>
 
-    <section class="section" id="faq">
-      <div class="wrap narrow">
-        <h2 class="reveal">Questions</h2>
-        <div class="faq reveal">
-          <details>
-            <summary>Why does it need Accessibility access?</summary>
-            <p>Accessibility access lets rjot hear the two Shift taps and read the text you selected in another app. macOS asks once. Turn rjot on under System Settings, Privacy &amp; Security, Accessibility.</p>
-          </details>
-          <details>
-            <summary>macOS says it can't open rjot.</summary>
-            <p>rjot isn't notarized by Apple yet. The first time, right-click rjot.app and choose Open, or run <code>xattr -dr com.apple.quarantine rjot.app</code>.</p>
-          </details>
-          <details>
-            <summary>Does it work in browsers and Electron apps?</summary>
-            <p>Yes. Most native apps tell rjot what's selected. For the ones that don't, rjot presses <kbd>&#8984;</kbd> <kbd>C</kbd>, reads the text, and puts your clipboard back the way it was.</p>
-          </details>
-          <details>
-            <summary>How is it different from a clipboard manager?</summary>
-            <p>A clipboard manager keeps everything you copy. rjot keeps only what you ask it to, and leaves your clipboard as it was.</p>
-          </details>
+    <section class="assembly" id="download">
+      <div class="wrap">
+        <h2 class="section-title">Assembly</h2>
+        <ol class="steps">
+          <li><span class="key num-key" aria-hidden="true"><span class="cap">1</span></span><h3>Download</h3><p>Get the zip from GitHub Releases, unzip it, and move rjot.app to Applications.</p></li>
+          <li><span class="key num-key" aria-hidden="true"><span class="cap">2</span></span><h3>Open it once</h3><p>It isn't notarized yet, so right-click rjot.app and choose Open, or run <code>xattr -dr com.apple.<wbr>quarantine rjot.app</code>.</p></li>
+          <li><span class="key num-key" aria-hidden="true"><span class="cap">3</span></span><h3>Allow Accessibility</h3><p>Click Open System Settings in rjot and switch it on. That lets it hear Shift and read the selection.</p></li>
+          <li><span class="key key-accent num-key" aria-hidden="true"><span class="cap">4</span></span><h3>Tap Shift twice</h3><p>Select something anywhere. A short pop means it's kept.</p></li>
+        </ol>
+        <div class="closing">
+          <a class="key key-accent key-enter" href="https://github.com/yoouTaro/rjot/releases/latest"><span class="cap"><span>Download for Mac</span><svg class="legend-icon"><use href="#i-return"/></svg></span></a>
+          <p class="closing-note">Free and open source, v0.0.1-alpha. Or <a href="https://github.com/yoouTaro/rjot#build">build it from source</a>.</p>
         </div>
-      </div>
-    </section>
-
-    <section class="download" id="download">
-      <div class="wrap narrow center">
-        <img class="reveal" src="img/icon.png" width="72" height="72" alt="">
-        <h2 class="reveal">Free, and yours.</h2>
-        <p class="section-lead reveal">macOS 11 or later, on Apple silicon.</p>
-        <div class="cta reveal">
-          <a class="btn" href="https://github.com/yoouTaro/rjot/releases/latest">Download for Mac</a>
-          <a class="btn btn-ghost" href="https://github.com/yoouTaro/rjot#build">Build from source</a>
-        </div>
-        <pre class="reveal"><code><span class="dim"># first launch, if macOS blocks it</span>
-xattr -dr com.apple.quarantine rjot.app</code></pre>
       </div>
     </section>
   </main>
 
   <footer class="foot">
     <div class="wrap foot-inner">
-      <span>rjot &middot; MIT license</span>
-      <span><a href="https://github.com/yoouTaro/rjot">GitHub</a> &middot; <a href="https://github.com/yoouTaro/rjot/releases">Releases</a> &middot; <a href="https://github.com/yoouTaro">yoouTaro</a></span>
+      <span>rjot &middot; MIT license &middot; made by <a href="https://github.com/yoouTaro">yoouTaro</a></span>
+      <span><a href="https://github.com/yoouTaro/rjot">GitHub</a> &middot; <a href="https://github.com/yoouTaro/rjot/releases">Releases</a></span>
     </div>
   </footer>
 
