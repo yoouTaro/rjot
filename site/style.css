@@ -47,7 +47,7 @@ body {
 img { display: block; max-width: 100%; height: auto; }
 a { color: inherit; text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
 ::selection { background: color-mix(in oklab, #E3874D 55%, white); color: var(--ink); }
-:focus-visible { outline: 2px solid #B65F2B; outline-offset: 3px; border-radius: 6px; }
+:focus-visible { outline: 2px solid #8A4519; outline-offset: 3px; border-radius: 6px; }
 textarea { caret-color: #B65F2B; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .skip { position: absolute; left: -999px; top: 8px; z-index: 20; background: var(--ink); color: #fff; padding: 8px 12px; border-radius: 6px; }

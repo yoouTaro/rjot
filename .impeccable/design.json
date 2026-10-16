@@ -1,0 +1,836 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-16T06:34:31+00:00",
+  "title": "Design System: rjot site",
+  "extensions": {
+    "scope": "Website in site/ only; the native egui app is out of scope.",
+    "colorMeta": {
+      "case": {
+        "role": "neutral",
+        "displayName": "Case Grey",
+        "purpose": "Page ground, sticky bar, theme-color.",
+        "canonical": "#C7CBCF",
+        "oklch": "oklch(84.0% 0.007 247.9)",
+        "tonalRamp": [
+          "#090B0E",
+          "#222528",
+          "#3F4246",
+          "#5E6265",
+          "#7F8386",
+          "#A2A5A9",
+          "#C6CACE",
+          "#EBEFF3"
+        ]
+      },
+      "case-hi": {
+        "role": "neutral",
+        "displayName": "Case Highlight",
+        "purpose": "Screenshot mats, inline code on the case.",
+        "canonical": "#D3D6D9",
+        "oklch": "oklch(87.5% 0.005 247.9)",
+        "tonalRamp": [
+          "#090B0D",
+          "#232528",
+          "#404245",
+          "#5F6164",
+          "#808385",
+          "#A2A5A8",
+          "#C6C9CC",
+          "#ECEFF2"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "purpose": "Headings and primary text.",
+        "canonical": "#1C1E21",
+        "oklch": "oklch(23.4% 0.007 258.4)",
+        "tonalRamp": [
+          "#090B0E",
+          "#232528",
+          "#404245",
+          "#5F6165",
+          "#808286",
+          "#A2A5A9",
+          "#C6C9CD",
+          "#ECEFF3"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Ink 2",
+        "purpose": "Body copy and leads.",
+        "canonical": "#3F444A",
+        "oklch": "oklch(38.4% 0.012 252.9)",
+        "tonalRamp": [
+          "#080C10",
+          "#21262B",
+          "#3E4248",
+          "#5C6268",
+          "#7D838A",
+          "#A0A6AD",
+          "#C4CAD1",
+          "#E9EFF7"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Ink 3",
+        "purpose": "Mono measurements; lightest text allowed on the case.",
+        "canonical": "#50565D",
+        "oklch": "oklch(45.0% 0.014 252.2)",
+        "tonalRamp": [
+          "#070C11",
+          "#20262C",
+          "#3D4349",
+          "#5C6269",
+          "#7D838B",
+          "#9FA6AE",
+          "#C3CAD2",
+          "#E8EFF8"
+        ]
+      },
+      "copper-top": {
+        "role": "primary",
+        "displayName": "Copper Cap",
+        "purpose": "Accent cap face: Shift, Download, final step.",
+        "canonical": "#E3874D",
+        "oklch": "oklch(71.1% 0.134 51.3)",
+        "tonalRamp": [
+          "#170600",
+          "#3E1900",
+          "#693003",
+          "#964809",
+          "#C0672B",
+          "#E78A50",
+          "#FCB78F",
+          "#FFEADE"
+        ]
+      },
+      "copper-skirt": {
+        "role": "primary",
+        "displayName": "Copper Skirt",
+        "purpose": "Accent cap walls; focus outline and caret.",
+        "canonical": "#B65F2B",
+        "oklch": "oklch(57.9% 0.130 48.6)",
+        "tonalRamp": [
+          "#180500",
+          "#3E1903",
+          "#6B2D01",
+          "#994507",
+          "#BF6734",
+          "#E68A58",
+          "#FCB794",
+          "#FEEADF"
+        ]
+      },
+      "copper-legend": {
+        "role": "primary",
+        "displayName": "Burnt Legend",
+        "purpose": "Legends on copper caps.",
+        "canonical": "#2B1205",
+        "oklch": "oklch(21.7% 0.047 47.7)",
+        "tonalRamp": [
+          "#180500",
+          "#381D10",
+          "#573A2C",
+          "#78594A",
+          "#9B7A6A",
+          "#BF9D8C",
+          "#E4C1AF",
+          "#FEEAE0"
+        ]
+      },
+      "alpha-top": {
+        "role": "secondary",
+        "displayName": "Alpha Grey",
+        "purpose": "Letter caps, tray caps, kbd chips, steps.",
+        "canonical": "#EFEFEB",
+        "oklch": "oklch(95.1% 0.005 106.5)",
+        "tonalRamp": [
+          "#0B0B09",
+          "#252522",
+          "#42423F",
+          "#61615E",
+          "#82827F",
+          "#A5A5A1",
+          "#C9C9C5",
+          "#EFEFEB"
+        ]
+      },
+      "alpha-skirt": {
+        "role": "secondary",
+        "displayName": "Alpha Skirt",
+        "purpose": "Alpha cap walls (raster).",
+        "canonical": "#CBCDC9",
+        "oklch": "oklch(84.6% 0.006 128.5)",
+        "tonalRamp": [
+          "#0A0C09",
+          "#242623",
+          "#41433F",
+          "#60625E",
+          "#81837F",
+          "#A4A6A2",
+          "#C8CAC6",
+          "#EDEFEB"
+        ]
+      },
+      "alpha-legend": {
+        "role": "secondary",
+        "displayName": "Alpha Ink",
+        "purpose": "Legends on alpha caps.",
+        "canonical": "#2A2C2F",
+        "oklch": "oklch(29.2% 0.006 258.4)",
+        "tonalRamp": [
+          "#0A0B0E",
+          "#232528",
+          "#404245",
+          "#5F6165",
+          "#808286",
+          "#A3A5A9",
+          "#C7C9CD",
+          "#ECEFF3"
+        ]
+      },
+      "slate-top": {
+        "role": "secondary",
+        "displayName": "Slate Mod",
+        "purpose": "Modifier caps: nav, View source, dark chips.",
+        "canonical": "#58606A",
+        "oklch": "oklch(48.6% 0.019 254.0)",
+        "tonalRamp": [
+          "#060C13",
+          "#1F262E",
+          "#3B434C",
+          "#5A626C",
+          "#7B838E",
+          "#9DA6B1",
+          "#C1CAD6",
+          "#E6EFFB"
+        ]
+      },
+      "slate-skirt": {
+        "role": "secondary",
+        "displayName": "Slate Skirt",
+        "purpose": "Slate cap walls (raster).",
+        "canonical": "#3D444C",
+        "oklch": "oklch(38.3% 0.016 251.8)",
+        "tonalRamp": [
+          "#060C12",
+          "#1F262D",
+          "#3C434B",
+          "#5B626B",
+          "#7B838C",
+          "#9EA6AF",
+          "#C2CAD4",
+          "#E7F0FA"
+        ]
+      },
+      "slate-legend": {
+        "role": "secondary",
+        "displayName": "Mod White",
+        "purpose": "Legends on slate caps.",
+        "canonical": "#F6F7F8",
+        "oklch": "oklch(97.6% 0.002 247.8)",
+        "tonalRamp": [
+          "#0B0B0C",
+          "#242526",
+          "#414243",
+          "#606162",
+          "#818283",
+          "#A4A5A6",
+          "#C8C9CA",
+          "#EDEEEF"
+        ]
+      },
+      "plate": {
+        "role": "neutral",
+        "displayName": "Charcoal Plate",
+        "purpose": "Keyboard band, spec band, trays (with grain raster).",
+        "canonical": "#24272B",
+        "oklch": "oklch(27.1% 0.009 255.6)",
+        "tonalRamp": [
+          "#090B0F",
+          "#222529",
+          "#3F4247",
+          "#5E6166",
+          "#7F8388",
+          "#A1A5AA",
+          "#C5C9CF",
+          "#EBEFF4"
+        ]
+      },
+      "plate-ink": {
+        "role": "neutral",
+        "displayName": "Plate Ink",
+        "purpose": "Primary text on the plate.",
+        "canonical": "#ECEEF0",
+        "oklch": "oklch(94.8% 0.003 247.9)",
+        "tonalRamp": [
+          "#0A0B0D",
+          "#242527",
+          "#414244",
+          "#606163",
+          "#818284",
+          "#A3A5A7",
+          "#C7C9CB",
+          "#EDEFF1"
+        ]
+      },
+      "plate-ink-2": {
+        "role": "neutral",
+        "displayName": "Plate Ink 2",
+        "purpose": "Secondary text on the plate.",
+        "canonical": "#A9B0B7",
+        "oklch": "oklch(75.4% 0.013 248.0)",
+        "tonalRamp": [
+          "#070C10",
+          "#20262B",
+          "#3D4349",
+          "#5C6268",
+          "#7D838A",
+          "#9FA6AD",
+          "#C3CAD1",
+          "#E8EFF7"
+        ]
+      },
+      "plate-line": {
+        "role": "neutral",
+        "displayName": "Plate Line",
+        "purpose": "Spec sheet rules.",
+        "canonical": "rgba(255, 255, 255, 0.10)"
+      },
+      "plate-code": {
+        "role": "neutral",
+        "displayName": "Plate Code",
+        "purpose": "Inline code on the plate.",
+        "canonical": "#33373C",
+        "oklch": "oklch(33.5% 0.010 254.0)",
+        "tonalRamp": [
+          "#080B10",
+          "#22252A",
+          "#3E4248",
+          "#5D6267",
+          "#7E8389",
+          "#A1A5AC",
+          "#C5CAD0",
+          "#EAEFF5"
+        ]
+      },
+      "label-red": {
+        "role": "tertiary",
+        "displayName": "Label Red",
+        "purpose": "rjot note label color: card stripe and novelty cap.",
+        "canonical": "#F06A62",
+        "oklch": "oklch(68.7% 0.167 25.8)",
+        "tonalRamp": [
+          "#1F0001",
+          "#4B0407",
+          "#80000E",
+          "#AC2A2A",
+          "#D4504B",
+          "#FC756C",
+          "#FCB4AC",
+          "#FFE9E6"
+        ]
+      },
+      "label-orange": {
+        "role": "tertiary",
+        "displayName": "Label Orange",
+        "purpose": "rjot note label color: card stripe and novelty cap.",
+        "canonical": "#F0883E",
+        "oklch": "oklch(72.7% 0.153 52.8)",
+        "tonalRamp": [
+          "#170600",
+          "#3D1A00",
+          "#673104",
+          "#944A0D",
+          "#C76303",
+          "#EE863C",
+          "#FEB78B",
+          "#FEEADE"
+        ]
+      },
+      "label-yellow": {
+        "role": "tertiary",
+        "displayName": "Label Yellow",
+        "purpose": "rjot note label color: card stripe and novelty cap.",
+        "canonical": "#E3B341",
+        "oklch": "oklch(79.0% 0.139 85.2)",
+        "tonalRamp": [
+          "#110A00",
+          "#302303",
+          "#553E00",
+          "#7B5C05",
+          "#A27C18",
+          "#CC9D23",
+          "#F2C252",
+          "#FEEDC8"
+        ]
+      },
+      "label-green": {
+        "role": "tertiary",
+        "displayName": "Label Green",
+        "purpose": "rjot note label color: card stripe and novelty cap.",
+        "canonical": "#57AB5A",
+        "oklch": "oklch(66.9% 0.142 144.5)",
+        "tonalRamp": [
+          "#001001",
+          "#032E08",
+          "#01510F",
+          "#1B7525",
+          "#439848",
+          "#68BC6A",
+          "#8CE18D",
+          "#CCFECB"
+        ]
+      },
+      "label-blue": {
+        "role": "tertiary",
+        "displayName": "Label Blue",
+        "purpose": "rjot note label color: card stripe and novelty cap.",
+        "canonical": "#539BF5",
+        "oklch": "oklch(68.4% 0.152 255.1)",
+        "tonalRamp": [
+          "#000A20",
+          "#01244D",
+          "#07417F",
+          "#1260B5",
+          "#3B83DB",
+          "#66A7FB",
+          "#A7CCFC",
+          "#E5F0FE"
+        ]
+      },
+      "label-purple": {
+        "role": "tertiary",
+        "displayName": "Label Purple",
+        "purpose": "rjot note label color: card stripe and novelty cap.",
+        "canonical": "#B083F0",
+        "oklch": "oklch(69.8% 0.160 301.4)",
+        "tonalRamp": [
+          "#120125",
+          "#32035A",
+          "#532087",
+          "#7344AB",
+          "#9467D1",
+          "#B78AF8",
+          "#D4BBFF",
+          "#F1EBFF"
+        ]
+      },
+      "window-bg": {
+        "role": "tertiary",
+        "displayName": "Window Ground",
+        "purpose": "App light Copper theme, hero window replica only.",
+        "canonical": "#F7F4F0",
+        "oklch": "oklch(96.8% 0.006 75.4)",
+        "tonalRamp": [
+          "#0D0B08",
+          "#272522",
+          "#44423E",
+          "#63615D",
+          "#84827E",
+          "#A7A4A1",
+          "#CBC9C5",
+          "#F1EEEA"
+        ]
+      },
+      "window-card": {
+        "role": "tertiary",
+        "displayName": "Window Card",
+        "purpose": "App light Copper theme, hero window replica only.",
+        "canonical": "#FFFFFF",
+        "oklch": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#A5A5A5",
+          "#C9C9C9",
+          "#EEEEEE"
+        ]
+      },
+      "window-line": {
+        "role": "tertiary",
+        "displayName": "Window Line",
+        "purpose": "App light Copper theme, hero window replica only.",
+        "canonical": "#E4DDD5",
+        "oklch": "oklch(90.1% 0.013 71.3)",
+        "tonalRamp": [
+          "#0F0A06",
+          "#29241E",
+          "#47413A",
+          "#666059",
+          "#87817A",
+          "#AAA49C",
+          "#CFC8C0",
+          "#F4EDE5"
+        ]
+      },
+      "window-ink": {
+        "role": "tertiary",
+        "displayName": "Window Ink",
+        "purpose": "App light Copper theme, hero window replica only.",
+        "canonical": "#25211D",
+        "oklch": "oklch(25.1% 0.010 67.4)",
+        "tonalRamp": [
+          "#0E0A07",
+          "#282420",
+          "#46413D",
+          "#65605C",
+          "#86817C",
+          "#A9A49F",
+          "#CDC8C3",
+          "#F3EDE8"
+        ]
+      },
+      "window-faint": {
+        "role": "tertiary",
+        "displayName": "Window Faint",
+        "purpose": "App light Copper theme, hero window replica only.",
+        "canonical": "#6B635A",
+        "oklch": "oklch(50.4% 0.017 70.7)",
+        "tonalRamp": [
+          "#100A04",
+          "#2B241C",
+          "#484138",
+          "#686057",
+          "#898177",
+          "#ACA39A",
+          "#D1C7BD",
+          "#F6EDE2"
+        ]
+      },
+      "window-raise": {
+        "role": "tertiary",
+        "displayName": "Window Raise",
+        "purpose": "App light Copper theme, hero window replica only.",
+        "canonical": "#EFEAE4",
+        "oklch": "oklch(93.9% 0.010 72.7)",
+        "tonalRamp": [
+          "#0E0B07",
+          "#282420",
+          "#45413C",
+          "#65605B",
+          "#86817C",
+          "#A9A49F",
+          "#CDC8C2",
+          "#F3EEE8"
+        ]
+      },
+      "window-accent": {
+        "role": "tertiary",
+        "displayName": "Window Copper",
+        "purpose": "App light Copper theme, hero window replica only.",
+        "canonical": "#B0643A",
+        "oklch": "oklch(58.1% 0.113 48.2)",
+        "tonalRamp": [
+          "#180500",
+          "#3F1802",
+          "#692F08",
+          "#934A1E",
+          "#B86C42",
+          "#DF8E64",
+          "#FDB792",
+          "#FFEADF"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero headline only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Catalog entry names; 21px in assembly steps."
+      },
+      "lead": {
+        "displayName": "Lead",
+        "purpose": "Hero and section leads in Ink 2, max 34em."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running copy, max 32em in entries."
+      },
+      "legend": {
+        "displayName": "Legend",
+        "purpose": "Text on keycaps, scaled to cap height."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Tray captions, footer (14px)."
+      },
+      "measure": {
+        "displayName": "Measure",
+        "purpose": "Geist Mono for measurements and counts only."
+      }
+    },
+    "shadows": [
+      {
+        "name": "cap-rest",
+        "value": "0 calc(var(--u) * 0.07) calc(var(--u) * 0.14) -2px rgba(18, 22, 26, 0.34), 0 1px 1px rgba(18, 22, 26, 0.2)",
+        "purpose": "Cast shadow under every keycap."
+      },
+      {
+        "name": "cap-pressed",
+        "value": "0 calc(var(--u) * 0.02) calc(var(--u) * 0.05) -1px rgba(18, 22, 26, 0.36), 0 1px 0 rgba(18, 22, 26, 0.2)",
+        "purpose": "Pressed cap, with 0.06u downward travel."
+      },
+      {
+        "name": "window-lift",
+        "value": "0 1px 1px rgba(18, 22, 26, 0.12), 0 22px 48px -18px rgba(18, 22, 26, 0.45)",
+        "purpose": "Hero window replica."
+      },
+      {
+        "name": "capture-lift",
+        "value": "0 1px 1px rgba(18, 22, 26, 0.1), 0 26px 44px -22px rgba(18, 22, 26, 0.5)",
+        "purpose": "Screenshots on their mats."
+      },
+      {
+        "name": "plate-recess",
+        "value": "inset 0 10px 18px -12px rgba(0, 0, 0, 0.8), inset 0 -1px 0 rgba(255, 255, 255, 0.06)",
+        "purpose": "Keyboard plate band."
+      },
+      {
+        "name": "tray-recess",
+        "value": "inset 0 6px 12px -8px rgba(0, 0, 0, 0.8)",
+        "purpose": "Kit trays."
+      },
+      {
+        "name": "swatch-skirt",
+        "value": "inset 0 -3px 0 rgba(0, 0, 0, 0.25)",
+        "purpose": "Mini caps in colorway swatches (0.08 on light rows)."
+      }
+    ],
+    "motion": [
+      {
+        "name": "release",
+        "value": "cubic-bezier(0.3, 1.7, 0.45, 1)",
+        "purpose": "A key returning under its spring: one small overshoot. 220ms on transform and shadow."
+      },
+      {
+        "name": "press",
+        "value": "60ms ease-out",
+        "purpose": "Key going down (.down / :active)."
+      },
+      {
+        "name": "out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Fresh note glow fade, 1.6s."
+      },
+      {
+        "name": "note-land",
+        "value": "520ms cubic-bezier(0.2, 0.7, 0.3, 1)",
+        "purpose": "New note drops 16px, overshoots 3px, settles (WAAPI keyframes)."
+      },
+      {
+        "name": "hover-brighten",
+        "value": "filter brightness(1.04), 150ms ease",
+        "purpose": "Linked caps on hover."
+      },
+      {
+        "name": "status-color",
+        "value": "color 300ms ease",
+        "purpose": "Try line turning Ink after a capture."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion: reduce",
+        "purpose": "Disables cap transitions, note glow, landing animation and smooth scroll."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "stack",
+        "value": "960px",
+        "purpose": "Two-column grids stack; wide entries put the capture first."
+      },
+      {
+        "name": "narrow",
+        "value": "720px",
+        "purpose": "20px gutters, keyboard row collapses to the two Shift keys, nav extras hide."
+      }
+    ],
+    "keycapRaster": {
+      "generator": "scripts/render-caps.py (numpy + Pillow, RNG seed 7)",
+      "tile": "200x200 px 9-slice PNG for a 100px cap at 2x, 3x supersampled",
+      "outerRadius": "26px",
+      "faceInset": "18 10 18 34 px (l t r b)",
+      "faceRadius": "18px",
+      "wallShade": {
+        "left": 0.86,
+        "right": 0.8,
+        "back": 1.06,
+        "front": "1.0 fading to 0.84 at the foot"
+      },
+      "dish": "cylindrical across face depth, 1.035 - 0.075*sin(pi*v)^1.4, lit front lip, 6% rim highlight",
+      "grain": "PBT grain, 0.012 on light caps / 0.018 on dark, period aligned to the 120px middle slice",
+      "css": "border-image-slice: 40 40 70 40 fill; border-image-width: 0.2u 0.2u 0.35u 0.2u; border-image-repeat: round stretch",
+      "colorways": {
+        "alpha": [
+          "#EFEFEB",
+          "#CBCDC9"
+        ],
+        "copper": [
+          "#E3874D",
+          "#B65F2B"
+        ],
+        "slate": [
+          "#58606A",
+          "#3D444C"
+        ],
+        "red": [
+          "#F06A62",
+          "#BA4A44"
+        ],
+        "orange": [
+          "#F0883E",
+          "#BB662C"
+        ],
+        "yellow": [
+          "#E3B341",
+          "#AE862C"
+        ],
+        "green": [
+          "#57AB5A",
+          "#438546"
+        ],
+        "blue": [
+          "#539BF5",
+          "#3F76BC"
+        ],
+        "purple": [
+          "#B083F0",
+          "#8763B8"
+        ]
+      },
+      "plate": "256px RGB tile, base #26292D, bead-blast grain 0.035"
+    }
+  },
+  "components": [
+    {
+      "name": "Accent Keycap",
+      "kind": "button",
+      "refersTo": "key-accent",
+      "description": "Copper cap for Shift and Download actions. Approximation for the panel: the shipped cap is the 9-slice raster in site/img/caps/ via border-image; the gradient stands in for it here.",
+      "html": "<a class=\"ds-key-accent\" href=\"#\">Download for Mac</a>",
+      "css": ".ds-key-accent{--u:56px;display:inline-flex;align-items:flex-start;height:var(--u);min-width:var(--u);padding:calc(var(--u)*.12) calc(var(--u)*.18) calc(var(--u)*.24);border-radius:calc(var(--u)*.13);background:linear-gradient(to bottom,#E3874D 0 80%,#B65F2B 80%);color:#2B1205;font:600 calc(var(--u)*.24)/1.1 Archivo,'Helvetica Neue',sans-serif;font-stretch:104%;text-decoration:none;cursor:pointer;box-shadow:0 calc(var(--u)*.07) calc(var(--u)*.14) -2px rgba(18,22,26,.34),0 1px 1px rgba(18,22,26,.2);transition:transform 220ms cubic-bezier(.3,1.7,.45,1),box-shadow 220ms cubic-bezier(.3,1.7,.45,1),filter 150ms ease;--u:62px;padding-inline:22px;align-items:center;font-size:16.5px;font-weight:640;}.ds-key-accent:hover{filter:brightness(1.04)}.ds-key-accent:active{transform:translateY(calc(var(--u)*.06));box-shadow:0 calc(var(--u)*.02) calc(var(--u)*.05) -1px rgba(18,22,26,.36),0 1px 0 rgba(18,22,26,.2);transition-duration:60ms;transition-timing-function:ease-out}.ds-key-accent:focus-visible{outline:2px solid #B65F2B;outline-offset:3px}"
+    },
+    {
+      "name": "Mod Keycap",
+      "kind": "button",
+      "refersTo": "key-mod",
+      "description": "Slate modifier cap for secondary actions and nav. Approximation for the panel: the shipped cap is the 9-slice raster in site/img/caps/ via border-image; the gradient stands in for it here.",
+      "html": "<a class=\"ds-key-mod\" href=\"#\">View source</a>",
+      "css": ".ds-key-mod{--u:56px;display:inline-flex;align-items:flex-start;height:var(--u);min-width:var(--u);padding:calc(var(--u)*.12) calc(var(--u)*.18) calc(var(--u)*.24);border-radius:calc(var(--u)*.13);background:linear-gradient(to bottom,#58606A 0 80%,#3D444C 80%);color:#F6F7F8;font:600 calc(var(--u)*.24)/1.1 Archivo,'Helvetica Neue',sans-serif;font-stretch:104%;text-decoration:none;cursor:pointer;box-shadow:0 calc(var(--u)*.07) calc(var(--u)*.14) -2px rgba(18,22,26,.34),0 1px 1px rgba(18,22,26,.2);transition:transform 220ms cubic-bezier(.3,1.7,.45,1),box-shadow 220ms cubic-bezier(.3,1.7,.45,1),filter 150ms ease;--u:62px;padding-inline:22px;align-items:center;font-size:16.5px;font-weight:640;}.ds-key-mod:hover{filter:brightness(1.04)}.ds-key-mod:active{transform:translateY(calc(var(--u)*.06));box-shadow:0 calc(var(--u)*.02) calc(var(--u)*.05) -1px rgba(18,22,26,.36),0 1px 0 rgba(18,22,26,.2);transition-duration:60ms;transition-timing-function:ease-out}.ds-key-mod:focus-visible{outline:2px solid #B65F2B;outline-offset:3px}"
+    },
+    {
+      "name": "Alpha Keycap",
+      "kind": "custom",
+      "refersTo": "key-alpha",
+      "description": "Light grey letter cap, legend top-left. Approximation for the panel: the shipped cap is the 9-slice raster in site/img/caps/ via border-image; the gradient stands in for it here.",
+      "html": "<span class=\"ds-key-alpha\">F</span>",
+      "css": ".ds-key-alpha{--u:56px;display:inline-flex;align-items:flex-start;height:var(--u);min-width:var(--u);padding:calc(var(--u)*.12) calc(var(--u)*.18) calc(var(--u)*.24);border-radius:calc(var(--u)*.13);background:linear-gradient(to bottom,#EFEFEB 0 80%,#CBCDC9 80%);color:#2A2C2F;font:600 calc(var(--u)*.24)/1.1 Archivo,'Helvetica Neue',sans-serif;font-stretch:104%;text-decoration:none;cursor:pointer;box-shadow:0 calc(var(--u)*.07) calc(var(--u)*.14) -2px rgba(18,22,26,.34),0 1px 1px rgba(18,22,26,.2);transition:transform 220ms cubic-bezier(.3,1.7,.45,1),box-shadow 220ms cubic-bezier(.3,1.7,.45,1),filter 150ms ease;cursor:default;}.ds-key-alpha:hover{filter:brightness(1.04)}.ds-key-alpha:active{transform:translateY(calc(var(--u)*.06));box-shadow:0 calc(var(--u)*.02) calc(var(--u)*.05) -1px rgba(18,22,26,.36),0 1px 0 rgba(18,22,26,.2);transition-duration:60ms;transition-timing-function:ease-out}.ds-key-alpha:focus-visible{outline:2px solid #B65F2B;outline-offset:3px}"
+    },
+    {
+      "name": "Nav Chip",
+      "kind": "nav",
+      "refersTo": "key-chip",
+      "description": "Sticky bar with chip-size mod caps and a copper Download chip.",
+      "html": "<nav class=\"ds-bar\"><b class=\"ds-brand\">rjot</b><span><a class=\"ds-chip\" href=\"#\">Kits</a><a class=\"ds-chip\" href=\"#\">GitHub</a><a class=\"ds-chip ds-chip-cu\" href=\"#\">Download</a></span></nav>",
+      "css": ".ds-bar{display:flex;justify-content:space-between;align-items:center;height:72px;padding:0 24px;background:color-mix(in oklab,#C7CBCF 88%,transparent);backdrop-filter:blur(10px)}.ds-bar>span{display:flex;gap:8px}.ds-brand{font:800 21px Archivo,sans-serif;font-stretch:112%;letter-spacing:-.02em;color:#1C1E21}.ds-chip{display:inline-flex;align-items:center;height:40px;padding:4px 15px 9px;border-radius:5px;background:linear-gradient(to bottom,#58606A 0 80%,#3D444C 80%);color:#F6F7F8;font:600 14.5px Archivo,sans-serif;text-decoration:none;box-shadow:0 3px 6px -2px rgba(18,22,26,.34),0 1px 1px rgba(18,22,26,.2);transition:transform 220ms cubic-bezier(.3,1.7,.45,1),filter 150ms ease}.ds-chip:hover{filter:brightness(1.04)}.ds-chip:active{transform:translateY(2px);transition-duration:60ms}.ds-chip:focus-visible{outline:2px solid #B65F2B;outline-offset:3px}.ds-chip-cu{background:linear-gradient(to bottom,#E3874D 0 80%,#B65F2B 80%);color:#2B1205}"
+    },
+    {
+      "name": "Inline kbd",
+      "kind": "chip",
+      "refersTo": "kbd",
+      "description": "Small alpha cap set in running text.",
+      "html": "<p class=\"ds-p\">Select text and tap <span class=\"ds-kbd\">&#8679;</span> twice. Or <span class=\"ds-kbd ds-kbd-dark\">&#8984;</span><span class=\"ds-kbd ds-kbd-dark\">C</span>.</p>",
+      "css": ".ds-p{font:400 17px/1.6 Archivo,sans-serif;color:#1C1E21;background:#C7CBCF;padding:12px}.ds-kbd{display:inline-flex;align-items:center;justify-content:center;min-width:1.85em;height:1.85em;padding:0 .45em .32em;margin:0 .06em;border-radius:.24em;background:linear-gradient(to bottom,#EFEFEB 0 78%,#CBCDC9 78%);color:#2A2C2F;font:600 .8em/1 Archivo,sans-serif;vertical-align:-.12em}.ds-kbd-dark{background:linear-gradient(to bottom,#58606A 0 78%,#3D444C 78%);color:#F6F7F8}"
+    },
+    {
+      "name": "Tray",
+      "kind": "card",
+      "refersTo": "tray",
+      "description": "Piece of charcoal plate holding a kit's shortcut caps with captions.",
+      "html": "<div class=\"ds-tray\"><div class=\"ds-combo\"><span class=\"ds-tcap\">&#8984;</span><span class=\"ds-tcap\">F</span><small>Search</small></div><div class=\"ds-combo\"><span class=\"ds-tcap\">&#8984;</span><span class=\"ds-tcap\">2</span><small>The queue</small></div></div>",
+      "css": ".ds-tray{display:flex;flex-wrap:wrap;gap:14px 26px;padding:18px 20px 14px;border-radius:12px;background:#24272B;box-shadow:inset 0 6px 12px -8px rgba(0,0,0,.8)}.ds-combo{display:grid;grid-auto-flow:column;justify-content:start;gap:6px}.ds-combo small{grid-row:2;grid-column:1/span 3;color:#A9B0B7;font:400 13px Archivo,sans-serif}.ds-tcap{display:inline-flex;width:50px;height:50px;padding:6px 9px 12px;border-radius:6.5px;background:linear-gradient(to bottom,#EFEFEB 0 80%,#CBCDC9 80%);color:#2A2C2F;font:600 17px Archivo,sans-serif;box-shadow:0 3.5px 7px -2px rgba(0,0,0,.4)}"
+    },
+    {
+      "name": "Window Replica Note",
+      "kind": "card",
+      "refersTo": "window-note",
+      "description": "Note card from the hero rjot window, light Copper theme, with label stripe.",
+      "html": "<div class=\"ds-win\"><div class=\"ds-note\" style=\"--label:#B083F0\"><p>Capture now, sort later.</p><small>Claude &middot; 2m</small></div><div class=\"ds-note\"><p>Meeting moved to Thursday 10:30.</p><small>Messages &middot; 9m</small></div></div>",
+      "css": ".ds-win{display:grid;gap:6px;padding:12px 14px 10px;border-radius:14px;background:#F7F4F0;color:#25211D;font:400 14px/1.45 Archivo,sans-serif;box-shadow:0 1px 1px rgba(18,22,26,.12),0 22px 48px -18px rgba(18,22,26,.45)}.ds-note{position:relative;padding:9px 12px 7px 14px;background:#fff;border:1px solid #E4DDD5;border-radius:10px}.ds-note::before{content:'';position:absolute;left:1px;top:9px;bottom:9px;width:3px;border-radius:2px;background:var(--label,transparent)}.ds-note p{margin:0}.ds-note small{display:block;margin-top:2px;font-size:12px;color:#6B635A}"
+    },
+    {
+      "name": "Spec Sheet",
+      "kind": "custom",
+      "refersTo": "spec-row",
+      "description": "Definition list on the charcoal band; mono for measured values.",
+      "html": "<dl class=\"ds-sheet\"><div><dt>Gesture</dt><dd>Two taps of Shift alone, under <span class=\"ds-num\">350&nbsp;ms</span> apart</dd></div><div><dt>Weighs</dt><dd><span class=\"ds-num\">3.4&nbsp;MB</span> zipped</dd></div></dl>",
+      "css": ".ds-sheet{margin:0;padding:16px 24px;background:#24272B;color:#ECEEF0;font:400 17px/1.6 Archivo,sans-serif}.ds-sheet>div{display:grid;grid-template-columns:9.5em 1fr;gap:24px;padding:16px 0;border-bottom:1px solid rgba(255,255,255,.1)}.ds-sheet dt{font-weight:640;font-stretch:108%}.ds-sheet dd{margin:0;color:#A9B0B7}.ds-num{font-family:'Geist Mono','SF Mono',ui-monospace,monospace;font-size:.92em;font-variant-numeric:tabular-nums}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Shift, Twice",
+    "overview": "The site is a keycap set catalog for one colorway, \"rjot\". The product's mechanism is a key, so the page is built from keys: every button, nav link, shortcut chip, numbered step and color swatch is a keycap, drawn top-down with a lit skirt, a dished top face and the legend set top-left. The two Shift keys are copper; they are the product, and they press under the visitor's own Shift.\n\nThe ground is a cool grey case with light grey alpha caps, slate modifiers and copper accents. A charcoal plate appears as full-width bands (the hero keyboard row, the specification sheet) and as small trays that hold each kit's caps at real size. Real app captures sit on lighter mats, and the one live element is a working copy of the rjot window in the hero. Density is calm and catalog-like: one entry per kit, generous section spacing, short copy.\n\nType is Archivo, run wide and heavy for catalog headings and medium for legends. Geist Mono appears only for measurements and counts (version, size, timings, cap counts). Motion is physical and tied to keys: a fast press, a sprung return with one small overshoot.",
+    "keyCharacteristics": [
+      "Keycaps are the single component family; they are raster art (9-slice PNGs), not CSS gradients.",
+      "Copper is the accent and marks only Shift, Enter-like primary actions and the final step.",
+      "Charcoal plate bands and trays carry the keyboard material; the case grey carries reading.",
+      "Mono is for numbers you could measure, nothing else.",
+      "Every screenshot is a real app capture with a provenance sidecar."
+    ],
+    "rules": [
+      {
+        "name": "The Copper Is Shift Rule",
+        "body": "Copper marks the gesture and the download, nothing else. If a third kind of thing turns copper, the accent stops meaning Shift.",
+        "section": "colors"
+      },
+      {
+        "name": "The Product Colors Stay Product Rule",
+        "body": "The six label colors and the six theme swatches appear only where they show rjot's own data or settings.",
+        "section": "colors"
+      },
+      {
+        "name": "The Ruler Rule",
+        "body": "Geist Mono sets only values someone could measure or count (ms, MB, versions, cap counts). Words stay in Archivo.",
+        "section": "typography"
+      },
+      {
+        "name": "The Wide Heading Rule",
+        "body": "Headings run at 108 to 112% width with negative tracking; body never changes width.",
+        "section": "typography"
+      },
+      {
+        "name": "The Baked Skirt Rule",
+        "body": "A keycap's form lives in its raster. CSS never redraws the skirt or dish; it only casts the shadow and moves the cap.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do build every control, chip, step marker and swatch as a keycap using the rendered rasters in `site/img/caps/`; add a colorway by adding it to `render-caps.py` and re-rendering.",
+      "Do size caps from `--u` and `--w`, and keep legends top-left on the face except on wide action and Enter caps.",
+      "Do press caps with the 0.06u travel, 60ms down, 220ms sprung return, and drop the transitions under reduced motion.",
+      "Do use real app captures only, each with its `.webp.json` provenance sidecar.",
+      "Do keep Geist Mono for measurements and counts, with tabular figures."
+    ],
+    "donts": [
+      "Don't turn anything copper except the Shift keys, Download actions and the final assembly step; copper means the gesture.",
+      "Don't draw cap skirts or dishes with CSS gradients or borders; the raster owns the form.",
+      "Don't use the label or theme colors as page decoration.",
+      "Don't set prose or headings in Geist Mono.",
+      "Don't put text lighter than Ink 3 on the case ground."
+    ]
+  }
+}
