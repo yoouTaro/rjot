@@ -161,8 +161,8 @@ pub fn menu_label(text: &str, image: bool) -> String {
     if line.is_empty() {
         return if image { "Image".into() } else { "(empty)".into() };
     }
-    let mut out: String = line.chars().take(48).collect();
-    if line.chars().count() > 48 {
+    let mut out = crate::shaping::truncate(line, 48).to_string();
+    if out.len() < line.len() {
         out.push('…');
     }
     out

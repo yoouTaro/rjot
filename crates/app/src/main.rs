@@ -4,6 +4,7 @@ mod doubletap;
 mod exporter;
 mod icons;
 mod macos;
+mod shaping;
 mod statusbar;
 mod theme;
 

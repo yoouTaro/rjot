@@ -56,6 +56,7 @@ Then allow it under System Settings → Privacy & Security → Accessibility.
 - **Markdown copy:** in settings, pick a folder (an Obsidian vault, say). rjot keeps an `rjot` folder there up to date, with `Notes/`, `Queue/`, `Archive/`, `images/` and `Scratch.md`, one file per note with front matter. It only ever deletes files it wrote.
 - **Pin and archive:** pinned cards stay at the top. Archived cards leave the list but stay one click away.
 - **Image notes:** select an image and tap ⇧ twice.
+- **Khmer:** egui doesn't shape complex scripts, so rjot shapes Khmer itself (rustybuzz) and draws it over the layout. Subscripts stack, vowels sit where they belong, and long text wraps. It uses Kantumruy Pro if installed, else the system's Khmer Sangam MN.
 - **Updates:** settings → **Check for updates…** downloads the next release from GitHub, verifies its SHA-256 and restarts into it.
 
 ## Themes and sensitive mode

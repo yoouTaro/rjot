@@ -86,13 +86,35 @@ pub fn file_name(item: &Item) -> String {
         .collect::<Vec<_>>()
         .join(" ")
         .chars()
-        .filter(|c| c.is_alphanumeric() || " -_'".contains(*c))
+        // Drop only what file systems or Markdown links trip over; Khmer
+        // vowel signs and coeng are marks, not letters, and must stay.
+        .filter(|c| !c.is_control() && !"/\\:*?\"<>|#[]^.,;!`{}()".contains(*c) && !matches!(c, '\u{200B}'..='\u{200D}'))
         .collect();
-    let mut stem: String = words.trim().chars().take(60).collect();
+    let mut stem: String = cut(words.trim(), 60).to_string();
     if stem.is_empty() {
         stem = if item.image.is_some() { "Image".into() } else { "Note".into() };
     }
     format!("{} ({}).md", stem.trim_end(), item.id)
+}
+
+/// At most `max` characters, never ending inside a Khmer cluster (a cut
+/// before a vowel sign or after a coeng would leave a broken syllable).
+fn cut(text: &str, max: usize) -> &str {
+    let mut end = match text.char_indices().nth(max) {
+        Some((i, _)) => i,
+        None => return text,
+    };
+    let mark = |c: char| matches!(c, '\u{17B4}'..='\u{17D3}' | '\u{17DD}');
+    while end > 0 {
+        let next = text[end..].chars().next();
+        let prev = text[..end].chars().next_back();
+        if next.is_some_and(mark) || prev == Some('\u{17D2}') {
+            end -= prev.map_or(1, char::len_utf8);
+        } else {
+            break;
+        }
+    }
+    &text[..end]
 }
 
 pub fn markdown(item: &Item) -> String {
@@ -192,6 +214,18 @@ mod tests {
         img.image = Some("9.png".into());
         assert_eq!(file_name(&img), "Image (9).md");
         assert_eq!(file_name(&item(10, Kind::Note, "a/b: c?")), "ab c (10).md");
+        assert_eq!(file_name(&item(11, Kind::Note, "ខ្ញុំស្រលាញ់ ភាសាខ្មែរ")), "ខ្ញុំស្រលាញ់ ភាសាខ្មែរ (11).md");
+    }
+
+    #[test]
+    fn long_khmer_names_cut_between_syllables() {
+        let text = "ប្រទេសកម្ពុជាមានប្រវត្តិសាស្ត្រដ៏យូរលង់ហើយអង្គរវត្តគឺជាប្រាសាទដ៏ធំបំផុតមួយ";
+        let name = file_name(&item(5, Kind::Note, text));
+        let stem = name.strip_suffix(" (5).md").unwrap();
+        assert!(text.starts_with(stem));
+        let next = text[stem.len()..].chars().next().unwrap();
+        assert!(!matches!(next, '\u{17B4}'..='\u{17D3}'), "cut before a mark: {stem:?}");
+        assert!(!stem.ends_with('\u{17D2}'));
     }
 
     #[test]

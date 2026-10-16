@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Khmer:** notes, prompts, the scratchpad, search and page titles are drawn shaped (subscript consonants stack, vowels sit where they belong) and wrap at word breaks. rjot uses Kantumruy Pro when it's installed, otherwise the Khmer Sangam MN font that comes with macOS. Markdown file names keep Khmer intact.
+
 ## 0.0.2-alpha — 2026-10-16
 
 - **Menu bar icon:** the last five captures (click to copy), Quick note, Open rjot, Pause capture, Launch at login (macOS 13+) and Quit.

@@ -5,7 +5,7 @@ use crate::capture::{self, Signal};
 use crate::exporter::Exporter;
 use crate::icons::{self, Svg};
 use crate::statusbar::{self, MenuEvent, MenuState, StatusBar};
-use crate::{macos, theme};
+use crate::{macos, shaping, theme};
 use eframe::egui::{
     self, Align, CornerRadius, FontId, Frame, Id, Key, Layout, Margin, Modifiers, Rect, Response,
     RichText, Sense, Stroke, TextFormat, TextStyle, Ui, text::LayoutJob, vec2,
@@ -756,8 +756,8 @@ impl App {
                 ui.horizontal(|ui| {
                     let (r, _) = ui.allocate_exact_size(vec2(14.0, 14.0), Sense::hover());
                     icons::paint(ui, Svg::Search, r, theme::FAINT());
-                    let edit = egui::TextEdit::singleline(query).frame(false).hint_text("Search").desired_width(f32::INFINITY);
-                    let r = ui.add(edit);
+                    let font = TextStyle::Body.resolve(ui.style());
+                    let r = shaped_edit(ui, query, false, font, |e| e.frame(false).hint_text("Search").desired_width(f32::INFINITY)).response;
                     if std::mem::take(&mut self.focus_search) {
                         r.request_focus();
                     }
@@ -794,14 +794,11 @@ impl App {
             .corner_radius(10)
             .inner_margin(Margin::symmetric(12, 9))
             .show(ui, |ui| {
-                let edit = egui::TextEdit::multiline(&mut self.drafts[idx])
-                    .id(id)
-                    .frame(false)
-                    .hint_text(hint)
-                    .margin(Margin::ZERO)
-                    .desired_rows(2)
-                    .desired_width(f32::INFINITY);
-                let r = ui.add(edit);
+                let font = TextStyle::Body.resolve(ui.style());
+                let r = shaped_edit(ui, &mut self.drafts[idx], true, font, |e| {
+                    e.id(id).frame(false).hint_text(hint).margin(Margin::ZERO).desired_rows(2).desired_width(f32::INFINITY)
+                })
+                .response;
                 if std::mem::take(&mut self.focus_composer) {
                     r.request_focus();
                 }
@@ -958,15 +955,16 @@ impl App {
                         return;
                     }
                     let expanded = self.expanded.contains(&item.id);
-                    let galley = item_text(ui, item, expanded);
-                    let truncated = galley.elided;
-                    let r = if blur > 0.0 {
-                        let (rect, r) = ui.allocate_exact_size(galley.size(), Sense::click());
-                        paint_blurred(ui, rect.min, galley, theme::TEXT(), blur);
-                        r
+                    let job = item_job(ui, item, expanded);
+                    // Khmer and blurred text are drawn by hand; plain text
+                    // stays a normal (selectable) label.
+                    let (r, galley) = if blur > 0.0 || shaping::has_khmer(&item.text) {
+                        shaping::show(ui, job, Sense::click(), theme::TEXT(), blur)
                     } else {
-                        ui.add(egui::Label::new(galley).sense(Sense::click()))
+                        let galley = ui.painter().layout_job(job);
+                        (ui.add(egui::Label::new(galley.clone()).sense(Sense::click())), galley)
                     };
+                    let truncated = galley.elided;
                     if r.double_clicked() {
                         actions.push(Action::Edit(item.id));
                     } else if r.clicked() && (truncated || expanded) {
@@ -1096,7 +1094,8 @@ impl App {
         let Some((_, text)) = &mut self.editing else { return };
         let id = Id::new("edit-card");
         let (save, cancel) = ui.input_mut(|i| (i.consume_key(Modifiers::COMMAND, Key::Enter), i.consume_key(Modifiers::NONE, Key::Escape)));
-        let r = ui.add(egui::TextEdit::multiline(text).id(id).frame(false).margin(Margin::ZERO).desired_width(f32::INFINITY).desired_rows(3));
+        let font = TextStyle::Body.resolve(ui.style());
+        let r = shaped_edit(ui, text, true, font, |e| e.id(id).frame(false).margin(Margin::ZERO).desired_width(f32::INFINITY).desired_rows(3)).response;
         if !ui.memory(|m| m.focused().is_some()) {
             r.request_focus();
         }
@@ -1228,8 +1227,8 @@ impl App {
             .corner_radius(8)
             .inner_margin(Margin::symmetric(10, 6))
             .show(ui, |ui| {
-                let edit = egui::TextEdit::singleline(&mut p.query).frame(false).hint_text("Filter prompts").desired_width(f32::INFINITY);
-                let r = ui.add(edit);
+                let font = TextStyle::Body.resolve(ui.style());
+                let r = shaped_edit(ui, &mut p.query, false, font, |e| e.frame(false).hint_text("Filter prompts").desired_width(f32::INFINITY)).response;
                 if std::mem::take(&mut p.focus) || !r.has_focus() {
                     r.request_focus();
                 }
@@ -1257,7 +1256,7 @@ impl App {
                         let mut job = LayoutJob::single_section(item.text.trim().to_string(), TextFormat::simple(FontId::proportional(13.5), theme::TEXT()));
                         job.wrap.max_width = ui.available_width();
                         job.wrap.max_rows = 3;
-                        ui.label(ui.painter().layout_job(job));
+                        shaping::show(ui, job, Sense::hover(), theme::TEXT(), 0.0);
                     })
                     .response
                     .interact(Sense::click());
@@ -1337,24 +1336,28 @@ impl App {
                     if blur > 0.0 && !editing && !self.scratch.is_empty() {
                         let font = TextStyle::Body.resolve(ui.style());
                         let job = LayoutJob::simple(self.scratch.clone(), font, theme::TEXT(), ui.available_width());
-                        let galley = ui.painter().layout_job(job);
-                        let size = vec2(ui.available_width(), galley.size().y.max(ui.available_height()));
-                        let (rect, r) = ui.allocate_exact_size(size, Sense::click());
-                        paint_blurred(ui, rect.min, galley, theme::TEXT(), blur);
+                        let top = ui.cursor().min;
+                        let (_, galley) = shaping::show(ui, job, Sense::hover(), theme::TEXT(), blur);
+                        // The whole pad is the click target, not just the text.
+                        let rest = ui.available_height().max(0.0);
+                        let size = vec2(ui.available_width(), galley.size().y + rest);
+                        let r = ui.interact(Rect::from_min_size(top, size), Id::new("scratch-blurred"), Sense::click());
                         if r.on_hover_cursor(egui::CursorIcon::Text).clicked() {
                             ui.memory_mut(|m| m.request_focus(id));
                         }
                         return;
                     }
                     let rows = (ui.available_height() / 18.0).max(4.0) as usize;
-                    let edit = egui::TextEdit::multiline(&mut self.scratch)
-                        .id(id)
-                        .frame(false)
-                        .hint_text("Scratchpad. Anything goes; it's saved as you type.")
-                        .margin(Margin::ZERO)
-                        .desired_width(f32::INFINITY)
-                        .desired_rows(rows);
-                    if ui.add(edit).changed() {
+                    let font = TextStyle::Body.resolve(ui.style());
+                    let out = shaped_edit(ui, &mut self.scratch, true, font, |e| {
+                        e.id(id)
+                            .frame(false)
+                            .hint_text("Scratchpad. Anything goes; it's saved as you type.")
+                            .margin(Margin::ZERO)
+                            .desired_width(f32::INFINITY)
+                            .desired_rows(rows)
+                    });
+                    if out.response.changed() {
                         self.scratch_edited = Some(now);
                     }
                 });
@@ -1519,25 +1522,25 @@ fn segment(ui: &mut Ui, label: &str, count: Option<usize>, selected: bool) -> Re
     r
 }
 
-/// Draw `galley` as if out of focus: many faint copies spread over rings
-/// around its position. `amount` (0-1) scales the spread, so at 0 it's
-/// plain text.
-fn paint_blurred(ui: &Ui, pos: egui::Pos2, galley: Arc<egui::Galley>, color: egui::Color32, amount: f32) {
-    /// Radius and sample count per ring.
-    const RINGS: [(f32, usize); 3] = [(2.0, 8), (4.0, 12), (6.5, 16)];
-    // Faint enough that the overlapping copies add up to soft, unreadable ink.
-    let ink = color.gamma_multiply(egui::lerp(1.0..=0.075, amount));
-    let painter = ui.painter();
-    painter.galley_with_override_text_color(pos, galley.clone(), ink);
-    for (ring, (radius, count)) in RINGS.into_iter().enumerate() {
-        // Stagger the rings so their samples don't line up.
-        let phase = ring as f32 * 0.5;
-        for k in 0..count {
-            let a = std::f32::consts::TAU * (k as f32 + phase) / count as f32;
-            let offset = vec2(a.cos(), a.sin()) * radius * amount;
-            painter.galley_with_override_text_color(pos + offset, galley.clone(), ink);
-        }
-    }
+/// A text editor that draws Khmer shaped: egui lays it out with the Khmer
+/// hidden and spaced to size, then the shaped clusters are painted on top.
+fn shaped_edit(
+    ui: &mut Ui,
+    text: &mut String,
+    multiline: bool,
+    font: FontId,
+    configure: impl for<'a> FnOnce(egui::TextEdit<'a>) -> egui::TextEdit<'a>,
+) -> egui::text_edit::TextEditOutput {
+    let mut runs = Vec::new();
+    let mut layouter = |ui: &Ui, buf: &dyn egui::TextBuffer, wrap: f32| {
+        let mut job = LayoutJob::simple(buf.as_str().to_owned(), font.clone(), theme::TEXT(), wrap);
+        runs = shaping::hide_runs(ui, &mut job);
+        ui.fonts_mut(|f| f.layout_job(job))
+    };
+    let edit = if multiline { egui::TextEdit::multiline(text) } else { egui::TextEdit::singleline(text) };
+    let out = configure(edit).layouter(&mut layouter).show(ui);
+    shaping::paint_runs(ui.painter(), &out.galley, out.galley_pos, &runs, None, 0.0);
+    out
 }
 
 fn section_label(ui: &mut Ui, text: &str) {
@@ -1656,7 +1659,7 @@ fn check_box(ui: &mut Ui, done: bool) -> Response {
 
 /// The item's text, cut to a few lines unless expanded; checked-off prompts
 /// are struck through.
-fn item_text(ui: &Ui, item: &Item, expanded: bool) -> Arc<egui::Galley> {
+fn item_job(ui: &Ui, item: &Item, expanded: bool) -> LayoutJob {
     let font = TextStyle::Body.resolve(ui.style());
     let mut format = TextFormat { font_id: font, color: theme::TEXT(), line_height: Some(19.0), ..Default::default() };
     if item.done {
@@ -1668,7 +1671,7 @@ fn item_text(ui: &Ui, item: &Item, expanded: bool) -> Arc<egui::Galley> {
     if !expanded {
         job.wrap.max_rows = COLLAPSED_ROWS;
     }
-    ui.painter().layout_job(job)
+    job
 }
 
 /// The page a capture came from: its title (or host), opening the URL.
@@ -1683,8 +1686,8 @@ fn link_line(ui: &mut Ui, url: &str, title: Option<&str>) {
         let mut job = LayoutJob::single_section(shown, TextFormat::simple(FontId::proportional(12.0), theme::ACCENT()));
         job.wrap.max_width = ui.available_width();
         job.wrap.max_rows = 1;
-        let galley = ui.painter().layout_job(job);
-        let r = ui.add(egui::Label::new(galley).sense(Sense::click())).on_hover_text(url).on_hover_cursor(egui::CursorIcon::PointingHand);
+        let (r, _) = shaping::show(ui, job, Sense::click(), theme::ACCENT(), 0.0);
+        let r = r.on_hover_text(url).on_hover_cursor(egui::CursorIcon::PointingHand);
         if r.clicked() {
             macos::open_url(url);
         }

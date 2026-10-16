@@ -27,7 +27,7 @@
   --l-blue: #539BF5;
   --l-purple: #B083F0;
 
-  --sans: "Archivo", "Helvetica Neue", sans-serif;
+  --sans: "Archivo", "Kantumruy Pro", "Khmer Sangam MN", "Noto Sans Khmer", "Helvetica Neue", sans-serif;
   --mono: "Geist Mono", "SF Mono", ui-monospace, monospace;
   /* A key returning under its spring: a small overshoot, once. */
   --release: cubic-bezier(0.3, 1.7, 0.45, 1);

@@ -157,6 +157,22 @@ fn install_fonts(ctx: &egui::Context) {
             fonts.families.entry(family).or_default().insert(0, name.into());
         }
     }
+    // Khmer: SF has no Khmer glyphs. Kantumruy Pro when installed, else the
+    // system's Khmer Sangam MN. The same font shapes Khmer (see shaping.rs).
+    let home = std::env::var("HOME").unwrap_or_default();
+    let khmer = [
+        format!("{home}/Library/Fonts/KantumruyPro-VariableFont_wght.ttf"),
+        "/Library/Fonts/KantumruyPro-VariableFont_wght.ttf".to_string(),
+        "/System/Library/Fonts/Supplemental/Khmer Sangam MN.ttf".to_string(),
+    ];
+    if let Some(bytes) = khmer.iter().find_map(|p| std::fs::read(p).ok()) {
+        crate::shaping::init(bytes.clone());
+        fonts.font_data.insert("khmer".into(), Arc::new(FontData::from_owned(bytes)));
+        for family in [FontFamily::Proportional, FontFamily::Monospace] {
+            let list = fonts.families.entry(family).or_default();
+            list.insert(1.min(list.len()), "khmer".into());
+        }
+    }
     ctx.set_fonts(fonts);
 }
 
