@@ -29,4 +29,4 @@ The first release.
 - Everything in one local JSON file; no account, sync or network.
 - The Accessibility button clears a stale permission entry left by an older build before asking again.
 
-Apple silicon, macOS 11 or later. Not notarized: right-click → Open the first time, or `xattr -dr com.apple.quarantine rjot.app`.
+Apple silicon, macOS 11 or later. Not notarized: right-click → Open the first time, or `xattr -dr com.apple.quarantine /Applications/rjot.app`.

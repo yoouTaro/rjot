@@ -30,7 +30,7 @@ Download the zip from [Releases](https://github.com/yoouTaro/rjot/releases), unz
 It isn't notarized, so macOS blocks the first launch. Right-click **rjot.app** and choose **Open**, or run:
 
 ```sh
-xattr -dr com.apple.quarantine rjot.app
+xattr -dr com.apple.quarantine /Applications/rjot.app
 ```
 
 Then allow it under System Settings → Privacy & Security → Accessibility.

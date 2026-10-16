@@ -20,7 +20,7 @@ Free, open source (MIT), local-only and a small native binary. Capture is one ge
 
 ## Operating Context
 
-Runs in the background on a Mac next to AI chats, editors and browsers. Closing the window hides it; capture keeps working. Distributed as an Apple silicon zip on GitHub Releases (`yoouTaro/rjot`), signed with a self-signed certificate and not notarized, so the first launch needs right-click → Open or `xattr -dr com.apple.quarantine`. Requires Accessibility permission.
+Runs in the background on a Mac next to AI chats, editors and browsers. Closing the window hides it; capture keeps working. Distributed as an Apple silicon zip on GitHub Releases (`yoouTaro/rjot`), signed with a self-signed certificate and not notarized, so the first launch needs right-click → Open or `xattr -dr com.apple.quarantine /Applications/rjot.app`. Requires Accessibility permission.
 
 ## Capabilities and Constraints
 

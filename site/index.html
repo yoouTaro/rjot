@@ -8,7 +8,11 @@
   <meta name="theme-color" content="#C7CBCF">
   <meta property="og:title" content="rjot: tap Shift twice">
   <meta property="og:description" content="Select text in any app, tap Shift twice, and it's saved as a note. A small, free Mac app.">
-  <meta property="og:image" content="https://yoouTaro.github.io/rjot/img/hero.webp">
+  <meta property="og:image" content="https://yoouTaro.github.io/rjot/img/og.png">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+  <meta property="og:url" content="https://yoouTaro.github.io/rjot/">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="img/icon.png">
   <link rel="preload" href="fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css">
@@ -198,7 +202,7 @@
         <h2 class="section-title">Assembly</h2>
         <ol class="steps">
           <li><span class="key num-key" aria-hidden="true"><span class="cap">1</span></span><h3>Download</h3><p>Get the zip from GitHub Releases, unzip it, and move rjot.app to Applications.</p></li>
-          <li><span class="key num-key" aria-hidden="true"><span class="cap">2</span></span><h3>Open it once</h3><p>It isn't notarized yet, so right-click rjot.app and choose Open, or run <code>xattr -dr com.apple.<wbr>quarantine rjot.app</code>.</p></li>
+          <li><span class="key num-key" aria-hidden="true"><span class="cap">2</span></span><h3>Open it once</h3><p>It isn't notarized yet, so right-click rjot.app in Applications and choose Open, or run <code>xattr -dr com.apple.<wbr>quarantine /Applications/<wbr>rjot.app</code>.</p></li>
           <li><span class="key num-key" aria-hidden="true"><span class="cap">3</span></span><h3>Allow Accessibility</h3><p>Click Open System Settings in rjot and switch it on. That lets it hear Shift and read the selection.</p></li>
           <li><span class="key key-accent num-key" aria-hidden="true"><span class="cap">4</span></span><h3>Tap Shift twice</h3><p>Select something anywhere. A short pop means it's kept.</p></li>
         </ol>
