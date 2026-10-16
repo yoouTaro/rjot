@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **More browsers keep the page link:** Helium, Opera, Dia, Comet, and Chrome's Beta, Dev and Canary builds, besides Safari, Chrome, Arc, Brave, Edge and Vivaldi.
+- **Links in text:** a note with a link in its text (say, a CI link pasted in Telegram) shows it as a clickable link line, like a browser capture does.
+
 ## 0.0.3-alpha — 2026-10-16
 
 - **Scratch** is ready to type the moment you open it (⌘3 or the tab), with the cursor at the end. In sensitive mode it stays blurred until you click.

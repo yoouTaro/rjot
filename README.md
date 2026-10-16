@@ -53,7 +53,7 @@ Then allow it under System Settings → Privacy & Security → Accessibility.
 
 - **Menu bar icon:** your last five captures (click one to copy it), Quick note, Open rjot, Pause capture, Launch at login (macOS 13+) and Quit.
 - **⌥⇧V paste picker:** from any app, ⌥⇧V opens your queued prompts. Type to filter, ↑↓ to choose, ↩ to paste it into the app you were in. Your clipboard is put back afterwards, and the prompt is checked off.
-- **Page links:** a selection saved from Safari, Chrome, Arc, Brave, Edge or Vivaldi keeps the page's URL and title, and the card links back to it. macOS asks once per browser whether rjot may ask it. Firefox has no AppleScript, so it only gets the app name.
+- **Page links:** a selection saved from Safari, Chrome, Arc, Brave, Edge, Vivaldi, Helium, Opera, Dia or Comet keeps the page's URL and title, and the card links back to it. A note with a link in its text shows that link too. macOS asks once per browser whether rjot may ask it. Firefox has no AppleScript, so it only gets the app name.
 - **Markdown copy:** in settings, pick a folder (an Obsidian vault, say). rjot keeps an `rjot` folder there up to date, with `Notes/`, `Queue/`, `Archive/`, `images/` and `Scratch.md`, one file per note with front matter. It only ever deletes files it wrote.
 - **Pin and archive:** pinned cards stay at the top. Archived cards leave the list but stay one click away.
 - **Image notes:** select an image and tap ⇧ twice.

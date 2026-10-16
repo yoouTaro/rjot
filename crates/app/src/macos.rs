@@ -195,14 +195,22 @@ pub fn frontmost() -> Option<Front> {
 
 /// Browsers that answer AppleScript, and how to ask each one.
 fn page_script(bundle: &str) -> Option<String> {
+    // Chromium-based browsers share Chrome's AppleScript dictionary.
     let chromium = [
         "com.google.Chrome",
         "com.google.Chrome.beta",
+        "com.google.Chrome.dev",
+        "com.google.Chrome.canary",
         "company.thebrowser.Browser",
+        "company.thebrowser.dia",
         "com.brave.Browser",
+        "com.brave.Browser.beta",
         "com.microsoft.edgemac",
         "org.chromium.Chromium",
         "com.vivaldi.Vivaldi",
+        "com.operasoftware.Opera",
+        "net.imput.helium",
+        "ai.perplexity.comet",
     ];
     if bundle == "com.apple.Safari" || bundle == "com.apple.SafariTechnologyPreview" {
         Some(format!(
@@ -544,6 +552,7 @@ mod tests {
     fn page_scripts() {
         assert!(page_script("com.apple.Safari").unwrap().contains("front document"));
         assert!(page_script("company.thebrowser.Browser").unwrap().contains("active tab"));
+        assert!(page_script("net.imput.helium").unwrap().contains("active tab"));
         assert!(page_script("org.mozilla.firefox").is_none());
         assert!(page_script("com.apple.Notes").is_none());
     }

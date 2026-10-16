@@ -1076,8 +1076,11 @@ impl App {
                         r.on_hover_cursor(egui::CursorIcon::PointingHand);
                     }
                 });
+                // The page it came from, or else the first link in the text.
                 if let Some(url) = &item.url {
                     link_line(ui, url, item.title.as_deref());
+                } else if let Some(url) = first_url(&item.text) {
+                    link_line(ui, url, None);
                 }
                 ui.horizontal(|ui| {
                     if item.pinned {
@@ -1797,6 +1800,15 @@ fn item_job(ui: &Ui, item: &Item, expanded: bool) -> LayoutJob {
     job
 }
 
+/// The first http(s) link in `text`, without trailing punctuation.
+fn first_url(text: &str) -> Option<&str> {
+    let start = text.find("https://").into_iter().chain(text.find("http://")).min()?;
+    let rest = &text[start..];
+    let end = rest.find(|c: char| c.is_whitespace() || "<>\"'`".contains(c)).unwrap_or(rest.len());
+    let url = rest[..end].trim_end_matches(['.', ',', ';', ':', '!', '?', ')', ']', '}']);
+    (url.len() > "https://".len()).then_some(url)
+}
+
 /// The page a capture came from: its title (or host), opening the URL.
 fn link_line(ui: &mut Ui, url: &str, title: Option<&str>) {
     let shown = title.filter(|t| !t.trim().is_empty()).map(str::to_string).unwrap_or_else(|| {
@@ -1826,4 +1838,18 @@ fn empty_state(ui: &mut Ui, title: &str, hint: Option<&str>) {
             ui.label(RichText::new(hint).small().color(theme::FAINT()));
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::first_url;
+
+    #[test]
+    fn links_in_text() {
+        assert_eq!(first_url("see https://ci.prod.lumasystem.com/repos/1/pipeline/19 now"), Some("https://ci.prod.lumasystem.com/repos/1/pipeline/19"));
+        assert_eq!(first_url("(docs: https://example.com/a)."), Some("https://example.com/a"));
+        assert_eq!(first_url("http://a.io, then https://b.io"), Some("http://a.io"));
+        assert_eq!(first_url("no links here"), None);
+        assert_eq!(first_url("just https://"), None);
+    }
 }
