@@ -10,6 +10,12 @@ It also has a **Queue** for prompts you want to use later (copying one checks it
 
 Built like [rgrip](https://github.com/yoouTaro/rgrip): Rust, egui, and one small binary.
 
+## Themes and sensitive mode
+
+The settings menu (sliders icon) has six themes, each with a dark and a light palette: Copper, Graphite, Sage, Ocean, Plum and Mono. Appearance can follow macOS or stay light or dark.
+
+**Sensitive mode** (⌘⇧S) shows note and scratchpad text as dots. Hold ⌥ to peek. It also keeps the rjot window out of screenshots, recordings and screen sharing. Whatever the mode, if a password manager marks a copy as concealed, rjot doesn't save it.
+
 ## How capture works
 
 1. A listen-only event tap watches for two quick taps of Shift on its own, with no other key in between.
@@ -21,12 +27,13 @@ rjot needs **Accessibility** access for this (System Settings → Privacy & Secu
 ## Build
 
 ```sh
+sh scripts/make-signing-cert.sh   # once: a local code-signing certificate
+sh scripts/bundle-macos.sh        # dist/rjot.app and a zip
 cargo run -p rjot                 # debug
-sh scripts/bundle-macos.sh        # dist/rjot.app and a zip, ad-hoc signed
 sh scripts/build-icon.sh          # re-render assets/ from assets/logo.svg
 ```
 
-The ad-hoc signature changes with every build, and macOS ties the Accessibility permission to it. After rebuilding, remove rjot from the Accessibility list and add it again.
+macOS ties the Accessibility permission to the app's signature. `make-signing-cert.sh` adds a self-signed "rjot Local Signing" certificate to your login keychain. The bundle script signs with it, so the permission survives rebuilds. Without the certificate, the app is ad-hoc signed and gets a new identity on every build. You then have to remove rjot from the Accessibility list and add it again after each rebuild.
 
 `RJOT_DATA=/path/notes.json` uses a different note file.
 
@@ -39,6 +46,8 @@ The ad-hoc signature changes with every build, and macOS ties the Accessibility 
 | ⌘1 / ⌘2 / ⌘3 | Notes / Queue / Scratch |
 | ⌘N | New note |
 | ⌘F | Search |
+| ⌘⇧S | Sensitive mode on/off |
+| ⌥ (hold) | Peek at hidden text |
 | ⌘W, close button | Hide (capture keeps working) |
 | ⌘Q | Quit |
 

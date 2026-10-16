@@ -4,4 +4,4 @@
 pub mod store;
 pub mod time;
 
-pub use store::{Color, Item, Kind, Store};
+pub use store::{Appearance, Color, Item, Kind, Settings, Store};

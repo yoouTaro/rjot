@@ -35,8 +35,14 @@ cat > "$app/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-# Ad-hoc signature (not notarized): required to run on Apple silicon.
-codesign --force --deep --sign - "$app"
+# Sign with the local certificate from make-signing-cert.sh when it exists:
+# its identity is stable, so the Accessibility permission survives rebuilds.
+# Otherwise ad-hoc (required to run on Apple silicon; changes every build).
+identity=-
+if security find-certificate -c "rjot Local Signing" >/dev/null 2>&1; then
+  identity="rjot Local Signing"
+fi
+codesign --force --deep --sign "$identity" "$app"
 
 zip="dist/rjot-$version-macos-$arch.zip"
 rm -f "$zip"

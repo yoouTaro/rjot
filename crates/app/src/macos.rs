@@ -154,23 +154,45 @@ unsafe fn copy_attribute(el: AXUIElementRef, name: &'static str) -> Option<CFTyp
     (err == 0 && !value.is_null()).then(|| unsafe { CFType::wrap_under_create_rule(value) })
 }
 
+pub enum Copied {
+    Text(String),
+    /// A password manager marked the copy as secret; it isn't kept.
+    Concealed,
+    Nothing,
+}
+
+/// Pasteboard types apps use to say "don't record this" (nspasteboard.org).
+const CONCEALED_TYPES: [&str; 2] = ["org.nspasteboard.ConcealedType", "com.agilebits.onepassword"];
+
+/// Whether the clipboard holds something marked as secret.
+fn concealed(pb: &NSPasteboard) -> bool {
+    pb.types().is_some_and(|types| types.iter().any(|t| CONCEALED_TYPES.contains(&t.to_string().as_str())))
+}
+
 /// Press ⌘C in the front app and read what it copied, then put the
-/// clipboard back the way it was. None when nothing was copied.
-pub fn copy_selection() -> Option<String> {
+/// clipboard back the way it was.
+pub fn copy_selection() -> Copied {
     let pb = NSPasteboard::generalPasteboard();
     let before = pb.changeCount();
     let saved = snapshot(&pb);
-    press_cmd_c()?;
+    if press_cmd_c().is_none() {
+        return Copied::Nothing;
+    }
     let started = Instant::now();
     while pb.changeCount() == before && started.elapsed() < Duration::from_millis(350) {
         std::thread::sleep(Duration::from_millis(15));
     }
     if pb.changeCount() == before {
-        return None;
+        return Copied::Nothing;
     }
+    let secret = concealed(&pb);
     let text = pb.stringForType(unsafe { NSPasteboardTypeString }).map(|s| s.to_string());
     restore(&pb, &saved);
-    text
+    match text {
+        _ if secret => Copied::Concealed,
+        Some(t) if !t.trim().is_empty() => Copied::Text(t),
+        _ => Copied::Nothing,
+    }
 }
 
 fn press_cmd_c() -> Option<()> {
@@ -230,6 +252,25 @@ pub fn activate() {
 /// Hide rjot (like ⌘H); the previous app comes back to the front.
 pub fn hide() {
     NSRunningApplication::currentApplication().hide();
+}
+
+/// Keep the window out of screenshots, recordings and screen sharing (or
+/// let it back in). Main thread only.
+pub fn set_window_private(frame: &eframe::Frame, private: bool) {
+    use objc2::msg_send;
+    use objc2::runtime::AnyObject;
+    use raw_window_handle::{HasWindowHandle, RawWindowHandle};
+    let Ok(handle) = frame.window_handle() else { return };
+    let RawWindowHandle::AppKit(h) = handle.as_raw() else { return };
+    let view = h.ns_view.as_ptr() as *mut AnyObject;
+    unsafe {
+        let window: *mut AnyObject = msg_send![view, window];
+        if !window.is_null() {
+            // NSWindowSharingNone = 0, NSWindowSharingReadOnly = 1.
+            let sharing: usize = if private { 0 } else { 1 };
+            let _: () = msg_send![window, setSharingType: sharing];
+        }
+    }
 }
 
 /// Local UTC offset in seconds.

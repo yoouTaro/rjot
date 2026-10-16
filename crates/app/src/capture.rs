@@ -47,9 +47,13 @@ fn capture(store: &Mutex<Store>) -> Signal {
     if front.as_ref().is_some_and(|f| f.pid == std::process::id() as i32) {
         return Signal::QuickNote;
     }
-    let nonblank = |t: &String| !t.trim().is_empty();
-    let Some(text) = macos::selected_text().filter(nonblank).or_else(|| macos::copy_selection().filter(nonblank)) else {
-        return Signal::QuickNote;
+    let text = match macos::selected_text().filter(|t| !t.trim().is_empty()) {
+        Some(t) => t,
+        None => match macos::copy_selection() {
+            macos::Copied::Text(t) => t,
+            macos::Copied::Concealed => return Signal::Error("Not saved: the app marked that text as a password".into()),
+            macos::Copied::Nothing => return Signal::QuickNote,
+        },
     };
     let mut store = store.lock().unwrap();
     let Some(id) = store.add(Kind::Note, &text, front.and_then(|f| f.name), time::now()) else {
@@ -58,6 +62,8 @@ fn capture(store: &Mutex<Store>) -> Signal {
     if let Err(e) = store.save() {
         return Signal::Error(format!("Couldn't save: {e}"));
     }
-    macos::play("Pop");
+    if store.settings().sound {
+        macos::play("Pop");
+    }
     Signal::Saved(id)
 }

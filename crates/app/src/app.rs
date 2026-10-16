@@ -9,7 +9,7 @@ use eframe::egui::{
     RichText, Sense, Stroke, TextFormat, TextStyle, Ui, text::LayoutJob, vec2,
 };
 use rjot_core::store::matches;
-use rjot_core::{Color, Item, Kind, Store, time};
+use rjot_core::{Appearance, Color, Item, Kind, Settings, Store, time};
 use std::collections::HashSet;
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
@@ -85,12 +85,15 @@ pub struct App {
     quick: bool,
     scratch: String,
     scratch_edited: Option<f64>,
+    /// A copy of the stored settings.
+    settings: Settings,
+    /// Whether the window is currently kept out of screen capture.
+    window_private: Option<bool>,
     utc_offset: i64,
 }
 
 impl App {
     pub fn new(cc: &eframe::CreationContext) -> App {
-        theme::apply(&cc.egui_ctx);
         // RJOT_DATA points at another note file (for trying things out).
         let path = std::env::var_os("RJOT_DATA").map(std::path::PathBuf::from).unwrap_or_else(Store::default_path);
         let (store, error) = match Store::open(&path) {
@@ -98,6 +101,8 @@ impl App {
             Err(e) => (Store::empty(&path), Some(e)),
         };
         let scratch = store.scratch().to_string();
+        let settings = store.settings().clone();
+        theme::init(&cc.egui_ctx, &settings.theme, settings.appearance);
         let store = Arc::new(Mutex::new(store));
         let signals = capture::start(store.clone(), cc.egui_ctx.clone());
         // Debug builds: RJOT_DEMO_TAB=queue|scratch opens on that tab, for screenshots.
@@ -124,6 +129,8 @@ impl App {
             quick: false,
             scratch,
             scratch_edited: None,
+            settings,
+            window_private: None,
             utc_offset: macos::utc_offset(),
         }
     }
@@ -141,6 +148,19 @@ impl App {
 
     fn notify(&mut self, text: impl Into<String>, undo: Option<Undo>) {
         self.toast = Some(Toast { text: text.into(), undo, until: f64::NAN });
+    }
+
+    /// Change settings, save them, and re-apply the theme.
+    fn set_settings(&mut self, ctx: &egui::Context, f: impl FnOnce(&mut Settings)) {
+        f(&mut self.settings);
+        let settings = self.settings.clone();
+        theme::apply(ctx, &settings.theme, settings.appearance);
+        self.change(|s| *s.settings_mut() = settings);
+    }
+
+    /// Note text is hidden: sensitive mode on and ⌥ not held.
+    fn hiding(&self, ui: &Ui) -> bool {
+        self.settings.sensitive && !ui.input(|i| i.modifiers.alt)
     }
 
     fn flush_scratch(&mut self) {
@@ -187,6 +207,11 @@ impl App {
                 i.consume_key(Modifiers::COMMAND, Key::W),
             )
         });
+        if ctx.input_mut(|i| i.consume_key(Modifiers::COMMAND | Modifiers::SHIFT, Key::S)) {
+            let on = !self.settings.sensitive;
+            self.set_settings(ctx, |s| s.sensitive = on);
+            self.notify(if on { "Sensitive mode on" } else { "Sensitive mode off" }, None);
+        }
         for (hit, tab) in [(n1, Tab::Notes), (n2, Tab::Queue), (n3, Tab::Scratch)] {
             if hit {
                 self.tab = tab;
@@ -239,6 +264,10 @@ impl App {
                 }
             });
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                self.settings_button(ui);
+                if self.settings.sensitive && icon_button(ui, Svg::EyeOff, "Sensitive mode is on (⌘⇧S to turn off). Hold ⌥ to peek.").clicked() {
+                    self.set_settings(ui.ctx(), |s| s.sensitive = false);
+                }
                 if self.tab != Tab::Scratch {
                     self.color_filter_button(ui);
                     let open = self.search.is_some();
@@ -253,6 +282,56 @@ impl App {
                 }
             });
         });
+    }
+
+    fn settings_button(&mut self, ui: &mut Ui) {
+        let r = icon_button(ui, Svg::Sliders, "Settings");
+        egui::Popup::menu(&r)
+            .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
+            .show(|ui| {
+                ui.set_width(250.0);
+                ui.spacing_mut().item_spacing.y = 4.0;
+                section_label(ui, "Appearance");
+                let mut appearance = self.settings.appearance;
+                Frame::new().fill(theme::RAISE()).corner_radius(8).inner_margin(Margin::same(2)).show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.spacing_mut().item_spacing.x = 2.0;
+                        for (a, label) in [(Appearance::System, "System"), (Appearance::Light, "Light"), (Appearance::Dark, "Dark")] {
+                            if segment(ui, label, None, appearance == a).clicked() {
+                                appearance = a;
+                            }
+                        }
+                    });
+                });
+                if appearance != self.settings.appearance {
+                    self.set_settings(ui.ctx(), |s| s.appearance = appearance);
+                }
+
+                ui.add_space(6.0);
+                section_label(ui, "Theme");
+                for t in theme::THEMES {
+                    if theme_row(ui, t, self.settings.theme == t.name).clicked() {
+                        self.set_settings(ui.ctx(), |s| s.theme = t.name.to_string());
+                    }
+                }
+
+                ui.add_space(4.0);
+                ui.separator();
+                let mut sensitive = self.settings.sensitive;
+                if switch_row(ui, &mut sensitive, "Sensitive mode", "Hides note text (hold ⌥ to peek) and keeps rjot out of screenshots and screen sharing.  ⌘⇧S").changed() {
+                    self.set_settings(ui.ctx(), |s| s.sensitive = sensitive);
+                }
+                let mut sound = self.settings.sound;
+                if switch_row(ui, &mut sound, "Sound on capture", "A short pop when a selection is saved.").changed() {
+                    self.set_settings(ui.ctx(), |s| s.sound = sound);
+                }
+                ui.separator();
+                let path = self.store.lock().unwrap().path().to_path_buf();
+                let reveal = egui::Button::new(RichText::new("Show notes file in Finder").color(theme::MUTED())).frame(false);
+                if ui.add(reveal).clicked() {
+                    let _ = std::process::Command::new("open").arg("-R").arg(&path).spawn();
+                }
+            });
     }
 
     /// Filter by color label: a list icon, or the chosen color's dot.
@@ -463,7 +542,8 @@ impl App {
                         actions.push(Action::Toggle(item.id));
                     }
                     let expanded = self.expanded.contains(&item.id);
-                    let galley = item_text(ui, item, expanded);
+                    let hidden = self.hiding(ui);
+                    let galley = item_text(ui, item, expanded, hidden);
                     let truncated = galley.elided;
                     let r = ui.add(egui::Label::new(galley).sense(Sense::click()));
                     if r.double_clicked() {
@@ -639,6 +719,11 @@ impl App {
                     RichText::new("rjot uses it to read the text you select and to hear double-tap ⇧. Nothing leaves your Mac.")
                         .color(theme::MUTED()),
                 );
+                ui.label(
+                    RichText::new("Already switched on? macOS may hold on to an older build: select rjot in the list, remove it with −, and add it again.")
+                        .small()
+                        .color(theme::FAINT()),
+                );
                 ui.add_space(4.0);
                 let open = egui::Button::new(RichText::new("Open System Settings").color(theme::BG())).fill(theme::ACCENT()).corner_radius(6);
                 if ui.add(open).clicked() {
@@ -651,6 +736,7 @@ impl App {
     // ---- Scratch ----
 
     fn scratch(&mut self, ui: &mut Ui, now: f64) {
+        let hidden = self.hiding(ui);
         Frame::new()
             .fill(theme::INPUT())
             .stroke(Stroke::new(1.0_f32, theme::BORDER()))
@@ -664,7 +750,8 @@ impl App {
                         .hint_text("Scratchpad. Anything goes; it's saved as you type.")
                         .margin(Margin::ZERO)
                         .desired_width(f32::INFINITY)
-                        .desired_rows(rows);
+                        .desired_rows(rows)
+                        .password(hidden);
                     if ui.add(edit).changed() {
                         self.scratch_edited = Some(now);
                     }
@@ -693,6 +780,8 @@ impl App {
                     }
                 }
                 ui.ctx().request_repaint_after(std::time::Duration::from_millis(500));
+            } else if self.settings.sensitive {
+                ui.label(RichText::new("Sensitive mode: hold ⌥ to peek").small().color(theme::FAINT()));
             } else if self.trusted {
                 ui.label(RichText::new("Double-tap ⇧ to save selected text").small().color(theme::FAINT()));
             } else {
@@ -703,8 +792,12 @@ impl App {
 }
 
 impl eframe::App for App {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         theme::sync(ctx);
+        if self.window_private != Some(self.settings.sensitive) {
+            self.window_private = Some(self.settings.sensitive);
+            macos::set_window_private(frame, self.settings.sensitive);
+        }
         let now = ctx.input(|i| i.time);
         self.handle_signals(ctx, now);
 
@@ -793,6 +886,65 @@ fn segment(ui: &mut Ui, label: &str, count: Option<usize>, selected: bool) -> Re
     r
 }
 
+/// Every visible character as a bullet, keeping line breaks and spaces so
+/// the card keeps its shape.
+fn redact(text: &str) -> String {
+    text.chars().map(|c| if c.is_whitespace() { c } else { '•' }).collect()
+}
+
+fn section_label(ui: &mut Ui, text: &str) {
+    ui.label(RichText::new(text).small().color(theme::FAINT()));
+}
+
+/// A theme in the settings menu: a dark/light preview chip and its name.
+fn theme_row(ui: &mut Ui, t: &theme::ThemeDef, selected: bool) -> Response {
+    let (rect, r) = ui.allocate_exact_size(vec2(ui.available_width(), 26.0), Sense::click());
+    if selected || r.hovered() {
+        ui.painter().rect_filled(rect, CornerRadius::same(5), theme::RAISE());
+    }
+    let chip = Rect::from_min_size(rect.left_center() + vec2(8.0, -8.0), vec2(30.0, 16.0));
+    let (left, right) = chip.split_left_right_at_fraction(0.5);
+    let p = ui.painter();
+    p.rect_filled(left, CornerRadius { nw: 4, sw: 4, ne: 0, se: 0 }, t.dark.bg);
+    p.rect_filled(right, CornerRadius { nw: 0, sw: 0, ne: 4, se: 4 }, t.light.bg);
+    p.circle_filled(left.center(), 3.5, t.dark.accent);
+    p.circle_filled(right.center(), 3.5, t.light.accent);
+    p.rect_stroke(chip, CornerRadius::same(4), Stroke::new(1.0_f32, theme::BORDER()), egui::StrokeKind::Inside);
+    p.text(chip.right_center() + vec2(10.0, 0.0), egui::Align2::LEFT_CENTER, t.name, FontId::proportional(13.0), theme::TEXT());
+    if selected {
+        icons::paint(ui, Svg::Check, Rect::from_center_size(rect.right_center() - vec2(14.0, 0.0), vec2(13.0, 13.0)), theme::ACCENT());
+    }
+    r
+}
+
+/// A setting with an on/off switch and a line of explanation.
+fn switch_row(ui: &mut Ui, on: &mut bool, title: &str, detail: &str) -> Response {
+    let mut changed = false;
+    let inner = ui.horizontal_top(|ui| {
+        let (rect, r) = ui.allocate_exact_size(vec2(30.0, 18.0), Sense::click());
+        if r.clicked() {
+            *on = !*on;
+            changed = true;
+        }
+        let t = ui.ctx().animate_bool(r.id, *on);
+        let track = theme::tint(theme::RAISE(), theme::ACCENT(), t);
+        ui.painter().rect_filled(rect, CornerRadius::same(9), track);
+        let x = egui::lerp(rect.left() + 9.0..=rect.right() - 9.0, t);
+        ui.painter().circle_filled(egui::pos2(x, rect.center().y), 7.0, theme::tint(theme::MUTED(), theme::BG(), t));
+        ui.vertical(|ui| {
+            ui.spacing_mut().item_spacing.y = 1.0;
+            ui.label(title);
+            ui.label(RichText::new(detail).small().color(theme::FAINT()));
+        });
+        r
+    });
+    let mut r = inner.inner;
+    if changed {
+        r.mark_changed();
+    }
+    r
+}
+
 /// A round color swatch; `None` is the "no color" swatch (a crossed ring).
 fn swatch(ui: &mut Ui, color: Option<Color>, selected: bool) -> Response {
     let (rect, r) = ui.allocate_exact_size(vec2(22.0, 22.0), Sense::click());
@@ -856,14 +1008,16 @@ fn check_box(ui: &mut Ui, done: bool) -> Response {
 
 /// The item's text, cut to a few lines unless expanded; checked-off prompts
 /// are struck through.
-fn item_text(ui: &Ui, item: &Item, expanded: bool) -> Arc<egui::Galley> {
+fn item_text(ui: &Ui, item: &Item, expanded: bool, hidden: bool) -> Arc<egui::Galley> {
     let font = TextStyle::Body.resolve(ui.style());
     let mut format = TextFormat { font_id: font, color: theme::TEXT(), line_height: Some(19.0), ..Default::default() };
     if item.done {
         format.color = theme::FAINT();
         format.strikethrough = Stroke::new(1.0_f32, theme::FAINT());
     }
-    let mut job = LayoutJob::single_section(item.text.trim_end().to_string(), format);
+    let text = item.text.trim_end();
+    let text = if hidden { redact(text) } else { text.to_string() };
+    let mut job = LayoutJob::single_section(text, format);
     job.wrap.max_width = ui.available_width();
     if !expanded {
         job.wrap.max_rows = COLLAPSED_ROWS;

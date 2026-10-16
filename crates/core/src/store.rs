@@ -57,8 +57,38 @@ pub struct Item {
     pub color: Option<Color>,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Appearance {
+    #[default]
+    System,
+    Light,
+    Dark,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Settings {
+    /// Theme name, e.g. "Copper".
+    pub theme: String,
+    pub appearance: Appearance,
+    /// Hide note text (peek with ⌥) and keep the window out of screenshots
+    /// and screen sharing.
+    pub sensitive: bool,
+    /// Play a sound when a selection is saved.
+    pub sound: bool,
+}
+
+impl Default for Settings {
+    fn default() -> Settings {
+        Settings { theme: "Copper".into(), appearance: Appearance::System, sensitive: false, sound: true }
+    }
+}
+
 #[derive(Debug, Default, Serialize, Deserialize)]
 struct Data {
+    #[serde(default)]
+    settings: Settings,
     #[serde(default)]
     next_id: u64,
     /// Oldest first; the UI shows them newest first.
@@ -210,6 +240,14 @@ impl Store {
         removed
     }
 
+    pub fn settings(&self) -> &Settings {
+        &self.data.settings
+    }
+
+    pub fn settings_mut(&mut self) -> &mut Settings {
+        &mut self.data.settings
+    }
+
     pub fn scratch(&self) -> &str {
         &self.data.scratch
     }
@@ -245,6 +283,7 @@ mod tests {
         s.set_done(b, true);
         s.set_color(a, Some(Color::Green));
         s.set_scratch("draft".into());
+        s.settings_mut().sensitive = true;
         s.save().unwrap();
 
         let s = Store::open(&path).unwrap();
@@ -253,8 +292,21 @@ mod tests {
         assert_eq!(s.get(b).unwrap().color, None);
         assert!(s.get(b).unwrap().done);
         assert_eq!(s.scratch(), "draft");
+        assert!(s.settings().sensitive);
+        assert_eq!(s.settings().theme, "Copper");
         assert_eq!(s.count(Kind::Prompt), 0);
         assert_eq!(s.items(Kind::Note).count(), 1);
+    }
+
+    #[test]
+    fn files_without_settings_get_defaults() {
+        let path = temp_path("old");
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(&path, br#"{"next_id":2,"items":[],"scratch":"","settings":{"theme":"Sage"}}"#).unwrap();
+        let s = Store::open(&path).unwrap();
+        assert_eq!(s.settings().theme, "Sage");
+        assert!(s.settings().sound);
+        assert_eq!(s.settings().appearance, Appearance::System);
     }
 
     #[test]

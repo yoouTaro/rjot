@@ -20,6 +20,10 @@ pub enum Svg {
     Tag,
     /// Filter by color label.
     ListFilter,
+    /// Settings.
+    Sliders,
+    /// Sensitive mode is on.
+    EyeOff,
 }
 
 impl Svg {
@@ -34,6 +38,8 @@ impl Svg {
             Svg::ListPlus => r#"<path d="M11 12H3"/><path d="M16 6H3"/><path d="M16 18H3"/><path d="M18 9v6"/><path d="M21 12h-6"/>"#,
             Svg::Tag => r#"<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="white"/>"#,
             Svg::ListFilter => r#"<path d="M3 6h18"/><path d="M7 12h10"/><path d="M10 18h4"/>"#,
+            Svg::Sliders => r#"<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>"#,
+            Svg::EyeOff => r#"<path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/>"#,
             Svg::StickyNote => r#"<path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8Z"/><path d="M15 3v4a2 2 0 0 0 2 2h4"/>"#,
         }
     }
@@ -81,7 +87,7 @@ mod tests {
 
     #[test]
     fn icons_rasterize() {
-        for svg in [Svg::Copy, Svg::Trash, Svg::Pencil, Svg::Check, Svg::Search, Svg::X, Svg::ListPlus, Svg::StickyNote, Svg::Tag, Svg::ListFilter] {
+        for svg in [Svg::Copy, Svg::Trash, Svg::Pencil, Svg::Check, Svg::Search, Svg::X, Svg::ListPlus, Svg::StickyNote, Svg::Tag, Svg::ListFilter, Svg::Sliders, Svg::EyeOff] {
             let img = rasterize(svg, 32).expect("valid svg");
             assert!(img.pixels.iter().any(|p| p.a() > 200), "{svg:?} drew something");
         }
